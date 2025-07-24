@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import Input, Model, component
+from kfp.dsl import Input, Model, component
 from typing import List, NamedTuple
 
 
 @component(
-    base_image="python:3.7",
+    base_image="python:3.11",
     packages_to_install=[
-        "google-cloud-aiplatform==1.24.1",
-        "google-cloud-pipeline-components==1.0.33",
+        "google-cloud-aiplatform",
+        "google-cloud-pipeline-components",
     ],
 )
 def model_batch_predict(

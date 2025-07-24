@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import component
+from kfp.dsl import component
 
 
 @component(
-    base_image="python:3.7",
-    packages_to_install=["google-cloud-bigquery==2.30.0"],
+    base_image="python:3.11",
+    packages_to_install=["google-cloud-bigquery"],
 )
 def bq_query_to_table(
     query: str,

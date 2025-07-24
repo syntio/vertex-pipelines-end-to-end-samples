@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import Input, Model, Metrics, component, Dataset
+from kfp.dsl import Input, Model, Metrics, component, Dataset
 from typing import NamedTuple
 
 
 @component(
-    base_image="python:3.7",
+    base_image="python:3.11",
     packages_to_install=[
-        "google-cloud-aiplatform==1.24.1",
+        "google-cloud-aiplatform",
     ],
 )
 def import_model_evaluation(

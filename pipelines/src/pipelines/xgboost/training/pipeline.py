@@ -16,7 +16,7 @@ import json
 import os
 import pathlib
 
-from kfp.v2 import compiler, dsl
+from kfp import compiler, dsl
 from pipelines import generate_query
 from bigquery_components import bq_query_to_table, extract_bq_to_dataset
 from vertex_components import (

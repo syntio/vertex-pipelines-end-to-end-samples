@@ -16,7 +16,7 @@ import json
 import os
 import pathlib
 
-from kfp.v2 import compiler, dsl
+from kfp import compiler, dsl
 from pipelines import generate_query
 from bigquery_components import bq_query_to_table, extract_bq_to_dataset
 from vertex_components import (
@@ -87,7 +87,7 @@ def tensorflow_pipeline(
         loss_fn="MeanSquaredError",
         optimizer="Adam",
         learning_rate=0.01,
-        hidden_units=[(64, "relu"), (32, "relu")],
+        hidden_units=[[64, "relu"], [32, "relu"]],
         distribute_strategy="single",
         early_stopping_epochs=5,
     )
@@ -139,7 +139,7 @@ def tensorflow_pipeline(
         destination_project_id=project_id,
         dataset_id=dataset_id,
         dataset_location=dataset_location,
-        query_job_config=json.dumps(dict(write_disposition="WRITE_TRUNCATE")),
+        query_job_config=dict(write_disposition="WRITE_TRUNCATE"),
     )
     ingest = bq_query_to_table(
         query=ingest_query, table_id=ingested_table, **kwargs
@@ -242,7 +242,7 @@ def tensorflow_pipeline(
         project_location=project_location,
     ).set_display_name("Import evaluation")
 
-    with dsl.Condition(existing_model != "", "champion-exists"):
+    with dsl.If(existing_model != "", "champion-exists"):
         update_best_model(
             challenger=train_model.outputs["model"],
             challenger_evaluation=evaluation.outputs["model_evaluation"],
