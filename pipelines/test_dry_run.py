@@ -5,9 +5,7 @@ Tests pipeline compilation and setup without running expensive cloud resources
 """
 
 import os
-import tempfile
 import sys
-from typing import List, Tuple
 
 def test_environment_setup() -> bool:
     """Test that required environment variables are set"""
@@ -92,7 +90,7 @@ def test_pipeline_compilation() -> bool:
             if os.path.exists(json_file):
                 try:
                     os.unlink(json_file)
-                except:
+                except OSError:
                     pass  # Ignore cleanup errors
         except Exception as e:
             print(f"  ❌ {name}: {e}")
