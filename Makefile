@@ -23,21 +23,29 @@ pre-commit: ## Runs the pre-commit checks over entire repo
 	pipenv run pre-commit run --all-files
 
 setup: ## Set up local environment for Python development on pipelines
-	@pip install pipenv && \
-	cd pipelines && \
-	pipenv install --dev
+	@cd pipelines && \
+	python3.7 -m venv venv37 && \
+	source venv37/Scripts/activate && \
+	python -m pip install --upgrade pip && \
+	pip install -r requirements.txt
 
 test-trigger: ## Runs unit tests for the pipeline trigger code
 	@cd pipelines && \
-	pipenv run python -m pytest tests/trigger
+	source venv37/Scripts/activate && \
+	python -m pytest tests/trigger
 
 compile-pipeline: ## Compile the pipeline to training.json or prediction.json. Must specify pipeline=<training|prediction>
-	@cd pipelines/src && \
-	pipenv run python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
+	@cd pipelines && \
+	source venv37/Scripts/activate && \
+	cd src && \
+	python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
 
-setup-components: ## Run unit tests for a component group
+setup-components: ## Setup component group venv
 	@cd "components/${GROUP}" && \
-	pipenv install --dev
+	python3.7 -m venv venv37 && \
+	source venv37/Scripts/activate && \
+	pip install --upgrade pip && \
+	pip install -r requirements.txt
 
 setup-all-components: ## Run unit tests for all pipeline components
 	@set -e && \

@@ -173,3 +173,6 @@ env.sh
 # Compiled pipelines
 **/*pipeline.json
 venv37/
+
+# Pathfinder/development documentation
+PATHFINDER_EXECUTION_SUMMARY.md

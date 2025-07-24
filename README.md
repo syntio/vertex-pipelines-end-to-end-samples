@@ -53,12 +53,15 @@ In a production MLOps solution, your ML pipelines need to be repeatable. So, we 
 
 ### Local setup
 
+⚠️ **Important**: Use Git Bash terminal on Windows (not PowerShell) for all commands.
+
 1. Clone the repository locally
-1. Install Python: `pyenv install`
-1. Install pipenv and pipenv dependencies: `make setup`
-1. Install pre-commit hooks: `cd pipelines && pipenv run pre-commit install`
+1. Install Python 3.7: Download from [python.org](https://www.python.org/ftp/python/3.7.9/python-3.7.9-amd64.exe) (install alongside existing Python)
+1. Set up environment: `make setup`
 1. Copy `env.sh.example` to `env.sh`, and update the environment variables in `env.sh`
 1. Load the environment variables in `env.sh` by running `source env.sh`
+
+**Verification**: Run `cd pipelines && source venv37/Scripts/activate && pytest tests/trigger/ -v` (should show 9 tests passed)
 
 ### Deploying Cloud Infrastructure
 

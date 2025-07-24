@@ -191,7 +191,12 @@ def sandbox_run(args: List[str] = None) -> aiplatform.PipelineJob:
     Returns the PipelineJob object of the triggered pipeline run.
     Usage: python main.py --template_path=pipeline.json --enable_caching=true
     """
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    
+    logging.info("Starting pipeline execution...")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -215,7 +220,9 @@ def sandbox_run(args: List[str] = None) -> aiplatform.PipelineJob:
         # in compiled JSON pipeline
     }
 
-    return trigger_pipeline_from_payload(payload)
+    result = trigger_pipeline_from_payload(payload)
+    logging.info(f"Pipeline execution completed: {result.resource_name}")
+    return result
 
 
 if __name__ == "__main__":
