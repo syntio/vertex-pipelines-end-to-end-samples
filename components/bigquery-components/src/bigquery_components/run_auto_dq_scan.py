@@ -1,7 +1,7 @@
-from kfp.dsl import component
+from kfp import dsl
 
 
-@component(
+@dsl.component(
     base_image="python:3.11",
     packages_to_install=["google-cloud-dataplex"],
 )

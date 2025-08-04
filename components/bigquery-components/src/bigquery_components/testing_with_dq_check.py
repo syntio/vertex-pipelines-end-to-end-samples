@@ -1,11 +1,9 @@
 from kfp import dsl, compiler
 from google.cloud import aiplatform
-from .bq_query_to_table import bq_query_to_table
-from .extract_bq_to_dataset import extract_bq_to_dataset
-from .run_auto_dq_scan import run_auto_dq_scan
+from bq_query_to_table import bq_query_to_table
+from extract_bq_to_dataset import extract_bq_to_dataset
+from run_auto_dq_scan import run_auto_dq_scan
 
-def sanitize(s: str) -> str:
-    return s.encode("utf-8", "strict").decode("utf-8")
 
 
 @dsl.pipeline(
@@ -36,11 +34,11 @@ def extract_pipeline():
     )
 
     dq_scan = run_auto_dq_scan(
-        #project_id=sanitize("syntio-ai-ops"),
-        #location=sanitize("europe-west1"),
-        #bq_table=sanitize("syntio-ai-ops.chicago_taxi_trips.taxi_trips_sample_2"),
-        #dq_scan_id=sanitize("taxi-trips-auto-dq-scan"),
-        #profile_scan_id=sanitize("taxi-trips-profile-scan"),
+        project_id="syntio-ai-ops",
+        location="europe-west1",
+        bq_table="syntio-ai-ops.chicago_taxi_trips.taxi_trips_sample_2",
+        dq_scan_id="taxi-trips-auto-dq-scan",
+        profile_scan_id="taxi-trips-profile-scan",
     )
 
     dq_scan.after(query_task)
