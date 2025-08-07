@@ -10,9 +10,7 @@ def run_scan(
         location: str = None,
         bq_table: str = None,
         dq_scan_id: str = None,
-        profile_scan_id: str = None,
 ) -> None:
-    import google.auth
     from google.cloud import dataplex_v1
 
     client = dataplex_v1.DataScanServiceClient()
@@ -25,7 +23,6 @@ def run_scan(
 
     resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
 
-    # Postavljanje DataSource objekta
     data_source = dataplex_v1.DataSource(resource=resource_uri)
 
     non_null_rule = dataplex_v1.DataQualityRule(
@@ -47,19 +44,14 @@ def run_scan(
     except Exception:
         print(f"DQ scan nije pronađen. Kreiram novi: {dq_scan_id}")
 
-        #operation = client.create_data_scan(
-        #    parent=parent,
-        #    data_scan_id=dq_scan_id,
-        #    data_scan=dq_scan,
-        #)
-        #operation.result()  # čekaj da se kreira prije nego što nastaviš
-        client.create_data_scan(
+        operation = client.create_data_scan(
             parent=parent,
             data_scan_id=dq_scan_id,
             data_scan=dq_scan,
         )
+        operation.result()  # čekaj da se kreira prije nego što nastaviš
 
-    # Pokretanje skeniranja
+
     request = dataplex_v1.RunDataScanRequest(
         name=dq_scan_full_name,
     )
