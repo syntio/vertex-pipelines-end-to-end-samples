@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import google.cloud.aiplatform  # noqa
-from kfp.v2.dsl import Model
+from kfp.dsl import Model
 from unittest import mock
 import pytest
 
@@ -37,7 +37,7 @@ def test_lookup_model(tmpdir):
 
         # Mock attribute and method
 
-        mock_path = tmpdir
+        mock_path = str(tmpdir)  # Convert to string for KFP 2.x compatibility
         mock_model.resource_name = "my-model-resource-name"
         mock_model.uri = mock_path
         mock_model.list.return_value = [mock_model]

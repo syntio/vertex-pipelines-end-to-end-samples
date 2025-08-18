@@ -20,24 +20,33 @@ help: ## Display this help screen
     
 pre-commit: ## Runs the pre-commit checks over entire repo
 	@cd pipelines && \
-	pipenv run pre-commit run --all-files
+	source venv37/Scripts/activate && \
+	pre-commit run --all-files
 
 setup: ## Set up local environment for Python development on pipelines
-	@pip install pipenv && \
-	cd pipelines && \
-	pipenv install --dev
+	@cd pipelines && \
+	python3.7 -m venv venv37 && \
+	source venv37/Scripts/activate && \
+	python -m pip install --upgrade pip && \
+	pip install -r requirements.txt
 
 test-trigger: ## Runs unit tests for the pipeline trigger code
 	@cd pipelines && \
-	pipenv run python -m pytest tests/trigger
+	source venv37/Scripts/activate && \
+	python -m pytest tests/trigger
 
 compile-pipeline: ## Compile the pipeline to training.json or prediction.json. Must specify pipeline=<training|prediction>
-	@cd pipelines/src && \
-	pipenv run python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
+	@cd pipelines && \
+	source venv37/Scripts/activate && \
+	cd src && \
+	python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
 
-setup-components: ## Run unit tests for a component group
+setup-components: ## Setup component group venv
 	@cd "components/${GROUP}" && \
-	pipenv install --dev
+	python3.7 -m venv venv37 && \
+	source venv37/Scripts/activate && \
+	pip install --upgrade pip && \
+	pip install -r requirements.txt
 
 setup-all-components: ## Run unit tests for all pipeline components
 	@set -e && \
@@ -48,7 +57,8 @@ setup-all-components: ## Run unit tests for all pipeline components
 
 test-components: ## Run unit tests for a component group
 	@cd "components/${GROUP}" && \
-	pipenv run pytest
+	source venv37/Scripts/activate && \
+	pytest
 
 test-all-components: ## Run unit tests for all pipeline components
 	@set -e && \
@@ -68,8 +78,10 @@ sync-assets: ## Sync assets folder to GCS. Must specify pipeline=<training|predi
 run: ## Compile pipeline, copy assets to GCS, and run pipeline in sandbox environment. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour)
 	@ $(MAKE) compile-pipeline && \
 	$(MAKE) sync-assets && \
-	cd pipelines/src && \
-	pipenv run python -m pipelines.trigger --template_path=./$(pipeline).json --enable_caching=$(enable_pipeline_caching)
+	cd pipelines && \
+	source venv37/Scripts/activate && \
+	cd src && \
+	python -m pipelines.trigger --template_path=./$(pipeline).json --enable_caching=$(enable_pipeline_caching)
 
 sync_assets ?= true
 e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipeline tests. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour). Optionally specify sync_assets=<true|false> (defaults to true)
@@ -79,7 +91,8 @@ e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipe
 		echo "Skipping syncing assets to GCS"; \
     fi && \
 	cd pipelines && \
-	pipenv run pytest --log-cli-level=INFO tests/${PIPELINE_TEMPLATE}/$(pipeline) --enable_caching=$(enable_pipeline_caching)
+	source venv37/Scripts/activate && \
+	pytest --log-cli-level=INFO tests/${PIPELINE_TEMPLATE}/$(pipeline) --enable_caching=$(enable_pipeline_caching)
 
 env ?= dev
 deploy-infra: ## Deploy the Terraform infrastructure to your project. Requires VERTEX_PROJECT_ID and VERTEX_LOCATION env variables to be set in env.sh. Optionally specify env=<dev|test|prod> (default = dev)

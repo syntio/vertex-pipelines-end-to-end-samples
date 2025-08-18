@@ -8,12 +8,13 @@ readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = [
-    "kfp == 1.8.21",
+    "kfp >= 2.5.0, < 3.0.0",
 ]
 
 [project.optional-dependencies]

@@ -13,12 +13,12 @@ from typing import List, Dict
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import Input, component, Metrics, Output, Artifact, Dataset
+from kfp.dsl import Input, component, Metrics, Output, Artifact, Dataset
 
 
 @component(
-    base_image="python:3.7",
-    packages_to_install=["google-cloud-aiplatform==1.24.1"],
+    base_image="python:3.11",
+    packages_to_install=["google-cloud-aiplatform"],
 )
 def custom_train_job(
     train_script_uri: str,

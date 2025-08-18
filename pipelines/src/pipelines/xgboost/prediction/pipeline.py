@@ -16,7 +16,7 @@ import json
 import os
 import pathlib
 
-from kfp.v2 import compiler, dsl
+from kfp import compiler, dsl
 
 from pipelines import generate_query
 from bigquery_components import bq_query_to_table
@@ -95,7 +95,7 @@ def xgboost_pipeline(
         destination_project_id=project_id,
         dataset_id=dataset_id,
         dataset_location=dataset_location,
-        query_job_config=json.dumps(dict(write_disposition="WRITE_TRUNCATE")),
+        query_job_config=dict(write_disposition="WRITE_TRUNCATE"),
     )
     ingest = bq_query_to_table(
         query=ingest_query, table_id=ingested_table, **kwargs

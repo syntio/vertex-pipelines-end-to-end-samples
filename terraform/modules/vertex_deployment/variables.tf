@@ -37,12 +37,15 @@ variable "gcp_service_list" {
     "cloudscheduler.googleapis.com",
     "dataflow.googleapis.com",
     "iam.googleapis.com",
+    "logging.googleapis.com",
     "monitoring.googleapis.com",
     "pubsub.googleapis.com",
     "secretmanager.googleapis.com",
     "storage-api.googleapis.com",
     "storage-component.googleapis.com",
     "storage.googleapis.com",
+    "cloudtrace.googleapis.com",
+    "clouderrorreporting.googleapis.com",
   ]
 }
 
@@ -108,8 +111,11 @@ variable "pipelines_sa_project_roles" {
   default = [
     "roles/aiplatform.user",
     "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
     "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",
+    "roles/storage.objectAdmin",
+    "roles/secretmanager.secretAccessor",
   ]
 }
 
@@ -119,5 +125,7 @@ variable "cloudfunction_sa_project_roles" {
   default = [
     "roles/aiplatform.user",
     "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/pubsub.subscriber",
   ]
 }

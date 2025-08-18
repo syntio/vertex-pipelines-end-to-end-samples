@@ -13,12 +13,12 @@ from typing import NamedTuple
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import Input, Model, component
+from kfp.dsl import Input, Model, component
 
 
 @component(
-    base_image="python:3.7",
-    packages_to_install=["google-cloud-aiplatform==1.24.1"],
+    base_image="python:3.11",
+    packages_to_install=["google-cloud-aiplatform"],
 )
 def update_best_model(
     challenger: Input[Model],

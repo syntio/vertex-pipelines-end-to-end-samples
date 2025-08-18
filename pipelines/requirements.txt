@@ -1,0 +1,18 @@
+# Core pipeline dependency - latest stable
+kfp>=2.5.0,<3.0.0
+
+# Template engine 
+jinja2>=3.1.0,<4.0.0
+
+# Local components (editable installs)
+-e ../components/bigquery-components/
+-e ../components/vertex-components/
+
+# GCP libraries - latest stable versions (July 2025)
+google-cloud-aiplatform>=1.60.0,<2.0.0
+google-cloud-bigquery>=3.25.0,<4.0.0
+google-cloud-pipeline-components>=2.18.0,<3.0.0
+google-cloud-storage>=2.18.0,<3.0.0
+
+# Testing - modern pytest
+pytest>=8.0.0,<9.0.0

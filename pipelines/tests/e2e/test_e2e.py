@@ -18,7 +18,7 @@ from typing import Callable
 import pytest
 import os
 from google.cloud import storage
-from kfp.v2 import compiler
+from kfp import compiler
 
 from pipelines.trigger.main import trigger_pipeline_from_payload
 
@@ -168,7 +168,7 @@ def pipeline_e2e_test(
         **kwargs (dict): conditional tasks groups in dictionary
     """
 
-    pipeline_json = f"{pipeline_func.__name__}.json"
+    pipeline_json = f"{getattr(pipeline_func, '__name__', pipeline_func.name)}.json"
 
     compiler.Compiler().compile(
         pipeline_func=pipeline_func,

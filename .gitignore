@@ -114,9 +114,19 @@ celerybeat.pid
 .venv
 env/
 venv/
+venv37/
+venv311/
+venv313/
 ENV/
 env.bak/
 venv.bak/
+
+# Compiled pipeline files (generated outputs)
+*.json
+!**/queries/*.json
+
+# Claude Code settings
+.claude/
 
 # Spyder project settings
 .spyderproject
@@ -172,3 +182,8 @@ env.sh
 
 # Compiled pipelines
 **/*pipeline.json
+**/venv37/
+
+# Pathfinder/development documentation
+PATHFINDER_EXECUTION_SUMMARY.md
+PATHFINDER_MODERNIZATION_SUMMARY.md
