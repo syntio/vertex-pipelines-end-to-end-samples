@@ -1,6 +1,6 @@
 from kfp import dsl, compiler
 from google.cloud import aiplatform
-from .bq_query_to_table import bq_query_to_table
+from bq_query_to_table import bq_query_to_table
 
 
 @dsl.pipeline(
