@@ -20,31 +20,31 @@ help: ## Display this help screen
     
 pre-commit: ## Runs the pre-commit checks over entire repo
 	@cd pipelines && \
-	source venv37/Scripts/activate && \
+	source venv311/Scripts/activate && \
 	pre-commit run --all-files
 
 setup: ## Set up local environment for Python development on pipelines
 	@cd pipelines && \
-	python3.7 -m venv venv37 && \
-	source venv37/Scripts/activate && \
+	python3.11 -m venv venv311 && \
+	source venv311/Scripts/activate && \
 	python -m pip install --upgrade pip && \
 	pip install -r requirements.txt
 
 test-trigger: ## Runs unit tests for the pipeline trigger code
 	@cd pipelines && \
-	source venv37/Scripts/activate && \
+	source venv311/Scripts/activate && \
 	python -m pytest tests/trigger
 
 compile-pipeline: ## Compile the pipeline to training.json or prediction.json. Must specify pipeline=<training|prediction>
 	@cd pipelines && \
-	source venv37/Scripts/activate && \
+	source venv311/Scripts/activate && \
 	cd src && \
 	python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
 
 setup-components: ## Setup component group venv
 	@cd "components/${GROUP}" && \
-	python3.7 -m venv venv37 && \
-	source venv37/Scripts/activate && \
+	python3.11 -m venv venv311 && \
+	source venv311/Scripts/activate && \
 	pip install --upgrade pip && \
 	pip install -r requirements.txt
 
@@ -57,7 +57,7 @@ setup-all-components: ## Run unit tests for all pipeline components
 
 test-components: ## Run unit tests for a component group
 	@cd "components/${GROUP}" && \
-	source venv37/Scripts/activate && \
+	source venv311/Scripts/activate && \
 	pytest
 
 test-all-components: ## Run unit tests for all pipeline components
@@ -79,7 +79,7 @@ run: ## Compile pipeline, copy assets to GCS, and run pipeline in sandbox enviro
 	@ $(MAKE) compile-pipeline && \
 	$(MAKE) sync-assets && \
 	cd pipelines && \
-	source venv37/Scripts/activate && \
+	source venv311/Scripts/activate && \
 	cd src && \
 	python -m pipelines.trigger --template_path=./$(pipeline).json --enable_caching=$(enable_pipeline_caching)
 
@@ -91,7 +91,7 @@ e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipe
 		echo "Skipping syncing assets to GCS"; \
     fi && \
 	cd pipelines && \
-	source venv37/Scripts/activate && \
+	source venv311/Scripts/activate && \
 	pytest --log-cli-level=INFO tests/${PIPELINE_TEMPLATE}/$(pipeline) --enable_caching=$(enable_pipeline_caching)
 
 env ?= dev
