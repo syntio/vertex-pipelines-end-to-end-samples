@@ -2,8 +2,7 @@ from kfp import dsl
 
 
 @dsl.component(
-    base_image="python:3.11",
-    packages_to_install=["google-cloud-dataplex", "google-cloud-bigquery"],
+    base_image="europe-west2-docker.pkg.dev/PROJECT_ID/ml-pipeline-containers/ml-pipeline-base:latest",
 )
 def run_scan(
         project_id: str = None,
