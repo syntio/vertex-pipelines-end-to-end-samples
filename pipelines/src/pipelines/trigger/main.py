@@ -192,10 +192,9 @@ def sandbox_run(args: List[str] = None) -> aiplatform.PipelineJob:
     Usage: python main.py --template_path=pipeline.json --enable_caching=true
     """
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
-    
+
     logging.info("Starting pipeline execution...")
 
     parser = argparse.ArgumentParser()
