@@ -39,7 +39,7 @@ def run_scan(
     WHERE table_name = '{table}'
     ORDER BY ordinal_position
     """
-
+    
     try:
         query_job = bq_client.query(metadata_query)
         columns_metadata = list(query_job.result())
@@ -48,7 +48,6 @@ def run_scan(
         print("Generiram jednostavna pravila na temelju metapodataka...")
 
         generated_rules = []
-
         for column in columns_metadata:
             column_name = column.column_name
             data_type = column.data_type

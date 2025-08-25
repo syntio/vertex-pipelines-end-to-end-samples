@@ -46,7 +46,6 @@ def extract_pipeline():
     dq_scan.after(query_task)
     extract_task.after(dq_scan)
 
-
 if __name__ == "__main__":
 
     pipeline_filename = "extract_export_check_pipeline.json"
