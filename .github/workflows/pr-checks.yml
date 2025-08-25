@@ -92,12 +92,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Compile tensorflow pipeline
+        shell: bash
         run: |
           for pipeline in training prediction; do
             make compile-pipeline PIPELINE_TEMPLATE=tensorflow pipeline=$pipeline
           done
 
       - name: Compile xgboost pipeline
+        shell: bash
         run: |
           for pipeline in training prediction; do
             make compile-pipeline PIPELINE_TEMPLATE=xgboost pipeline=$pipeline
