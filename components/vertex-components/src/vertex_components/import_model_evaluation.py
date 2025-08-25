@@ -17,7 +17,10 @@ from typing import NamedTuple
 
 
 @component(
-    base_image="europe-west2-docker.pkg.dev/PROJECT_ID/ml-pipeline-containers/ml-pipeline-base:latest",
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def import_model_evaluation(
     model: Input[Model],

@@ -16,7 +16,10 @@ from kfp.dsl import Dataset, Output, component
 
 
 @component(
-    base_image="europe-west2-docker.pkg.dev/PROJECT_ID/ml-pipeline-containers/ml-pipeline-base:latest",
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def extract_bq_to_dataset(
     bq_client_project_id: str,

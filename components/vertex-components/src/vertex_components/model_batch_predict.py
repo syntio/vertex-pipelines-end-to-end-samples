@@ -17,7 +17,10 @@ from typing import List, NamedTuple
 
 
 @component(
-    base_image="europe-west2-docker.pkg.dev/PROJECT_ID/ml-pipeline-containers/ml-pipeline-base:latest",
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def model_batch_predict(
     model: Input[Model],

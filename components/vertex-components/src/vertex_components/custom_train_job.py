@@ -17,7 +17,10 @@ from kfp.dsl import Input, component, Metrics, Output, Artifact, Dataset
 
 
 @component(
-    base_image="europe-west2-docker.pkg.dev/PROJECT_ID/ml-pipeline-containers/ml-pipeline-base:latest",
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def custom_train_job(
     train_script_uri: str,
