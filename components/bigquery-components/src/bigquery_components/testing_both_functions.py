@@ -3,6 +3,7 @@ from google.cloud import aiplatform
 from bq_query_to_table import bq_query_to_table
 from extract_bq_to_dataset import extract_bq_to_dataset
 
+
 @dsl.pipeline(
     name="extract-and-export-chicago-taxi-data",
     description="Query Chicago taxi data and export result to GCS",

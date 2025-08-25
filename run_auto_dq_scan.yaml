@@ -6,7 +6,7 @@
 #    location: str
 #    profile_scan_id: str
 #    project_id: str
-
+---
 components:
   comp-run-auto-dq-scan:
     executorLabel: exec-run-auto-dq-scan

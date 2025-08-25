@@ -39,7 +39,7 @@ def run_scan(
     WHERE table_name = '{table}'
     ORDER BY ordinal_position
     """
-    
+
     try:
         query_job = bq_client.query(metadata_query)
         columns_metadata = list(query_job.result())
