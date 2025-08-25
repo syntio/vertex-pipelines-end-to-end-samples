@@ -116,7 +116,7 @@ def xgboost_pipeline(
     bigquery_source_input_uri = f"bq://{project_id}.{dataset_id}.{ingested_table}"
     bigquery_destination_output_uri = f"bq://{project_id}.{dataset_id}"
 
-    batch_prediction = (
+    (
         model_batch_predict(
             model=champion_model.outputs["model"],
             job_display_name="my-xgboost-batch-prediction-job",

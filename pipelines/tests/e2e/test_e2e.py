@@ -237,9 +237,11 @@ def test_pipeline_tasks(tasks: list, expected_tasks: dict, allow_tasks_missing: 
         task["taskName"]: {
             # Create a key/value pair of output_name and output_uri
             # Do this for every output name
-            output_name: output_dict["artifacts"][0]["uri"]
-            if output_dict["artifacts"][0].get("uri") is not None
-            else None
+            output_name: (
+                output_dict["artifacts"][0]["uri"]
+                if output_dict["artifacts"][0].get("uri") is not None
+                else None
+            )
             for output_name, output_dict in task.get("outputs", {}).items()
         }
         # Create the above task dictionary for each task in the pipeline's tasks

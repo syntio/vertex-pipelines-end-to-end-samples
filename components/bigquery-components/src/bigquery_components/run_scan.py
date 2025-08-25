@@ -6,10 +6,10 @@ from kfp import dsl
     packages_to_install=["google-cloud-dataplex", "google-cloud-bigquery"],
 )
 def run_scan(
-        project_id: str = None,
-        location: str = None,
-        bq_table: str = None,
-        dq_scan_id: str = None,
+    project_id: str = None,
+    location: str = None,
+    bq_table: str = None,
+    dq_scan_id: str = None,
 ) -> None:
     from google.cloud import dataplex_v1, bigquery
 
@@ -20,14 +20,17 @@ def run_scan(
     dq_scan_full_name = f"{parent}/dataScans/{dq_scan_id}"
 
     project, dataset, table = bq_table.split(".")
-    resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
+    resource_uri = (
+        f"//bigquery.googleapis.com/projects/{project}"
+        f"/datasets/{dataset}/tables/{table}"
+    )
     data_source = dataplex_v1.DataSource(resource=resource_uri)
 
     # Step 1: Query BigQuery metadata to get column information (FAST!)
     print("Dohvaćam metadata o tablici iz INFORMATION_SCHEMA...")
-    
+
     metadata_query = f"""
-    SELECT 
+    SELECT
         column_name,
         data_type,
         is_nullable,
@@ -36,36 +39,40 @@ def run_scan(
     WHERE table_name = '{table}'
     ORDER BY ordinal_position
     """
-    
+
     try:
         query_job = bq_client.query(metadata_query)
         columns_metadata = list(query_job.result())
         print(f"Dobio metadata za {len(columns_metadata)} kolona")
-        
+
         print("Generiram jednostavna pravila na temelju metapodataka...")
-        
+
         generated_rules = []
-        
+
         for column in columns_metadata:
             column_name = column.column_name
             data_type = column.data_type
             is_nullable = column.is_nullable
-            
-            print(f"Analiziram kolonu: {column_name} ({data_type}, nullable: {is_nullable})")
-            
+
+            print(
+                f"Analiziram kolonu: {column_name} "
+                f"({data_type}, nullable: {is_nullable})"
+            )
+
             # Simple null check rules for nullable columns
             if is_nullable == "YES":
                 print(f"  -> Dodajem null check rule za {column_name}")
+                non_null_exp = dataplex_v1.DataQualityRule.NonNullExpectation()
                 generated_rules.append(
                     dataplex_v1.DataQualityRule(
                         column=column_name,
                         dimension="COMPLETENESS",
-                        non_null_expectation=dataplex_v1.DataQualityRule.NonNullExpectation()
+                        non_null_expectation=non_null_exp,
                     )
                 )
-        
+
         print(f"Generirano {len(generated_rules)} jednostavnih pravila")
-        
+
     except Exception as e:
         print(f"Greška pri dohvaćanju metapodataka: {e}")
         print("Koristim fallback pravilo...")
@@ -73,17 +80,14 @@ def run_scan(
             dataplex_v1.DataQualityRule(
                 column="trip_total",
                 dimension="COMPLETENESS",
-                non_null_expectation=dataplex_v1.DataQualityRule.NonNullExpectation()
+                non_null_expectation=dataplex_v1.DataQualityRule.NonNullExpectation(),
             )
         ]
-
 
     # Step 3: Create and run DQ scan with generated rules
     dq_scan = dataplex_v1.DataScan(
         data=data_source,
-        data_quality_spec=dataplex_v1.DataQualitySpec(
-            rules=generated_rules
-        ),
+        data_quality_spec=dataplex_v1.DataQualitySpec(rules=generated_rules),
     )
 
     try:

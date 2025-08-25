@@ -13,7 +13,6 @@
 # limitations under the License.
 ---
 steps:
-
   # Copy assets files to a new directory in GCS
   # (via a new local directory)
   # Directory name = git commit hash

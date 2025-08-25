@@ -32,5 +32,6 @@ if __name__ == "__main__":
         display_name="extract-chicago-taxi-data",
         template_path=pipeline_filename,
         pipeline_root="gs://test-for-bigquery-eu-123//pipeline-root",
-        job_id="extract-chicago-taxi-data-job-28-07-2025", # tu se mora promijenit da nije isti svaki put
+        job_id="extract-chicago-taxi-data-job-28-07-2025",
+        # tu se mora promijenit da nije isti svaki put
     ).run()

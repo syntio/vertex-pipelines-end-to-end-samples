@@ -83,5 +83,5 @@ def update_best_model(
         model_registry.add_version_aliases(["default"], challenger.version_id)
         return (True,)
 
-    logging.info(f"Keeping current champion!")
+    logging.info("Keeping current champion!")
     return (False,)

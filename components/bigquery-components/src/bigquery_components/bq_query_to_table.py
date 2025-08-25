@@ -64,7 +64,7 @@ def bq_query_to_table(
     query_job = bq_client.query(query, job_config=job_config)
 
     try:
-        result = query_job.result()
+        query_job.result()
         logging.info(f"BQ table {dest_table_ref} created")
     except GoogleCloudError as e:
         logging.error(e)

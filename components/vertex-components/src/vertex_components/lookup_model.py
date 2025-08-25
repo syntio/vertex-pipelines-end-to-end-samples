@@ -74,7 +74,7 @@ def lookup_model(
             + f"(project: {project_id} location: {project_location})"
         )
         if fail_on_model_not_found:
-            raise RuntimeError(f"Failed as model was not found")
+            raise RuntimeError("Failed as model was not found")
     elif len(models) == 1:
         target_model = models[0]
         model_resource_name = target_model.resource_name
