@@ -1,11 +1,11 @@
+---
 name: Pull Request Checks
 
-on:
+"on":
   pull_request:
     branches: [develop]
   push:
-    branches:
-      - matea/testing-vertex-ai-pipeline-exec 
+    branches: [matea/testing-vertex-ai-pipeline-exec]
 
 jobs:
   pre-commit:
@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
