@@ -91,6 +91,14 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Compile pipelines
+      - name: Compile tensorflow pipeline
         run: |
-          make compile
+          for pipeline in training prediction; do
+            make compile-pipeline PIPELINE_TEMPLATE=tensorflow pipeline=$pipeline
+          done
+
+      - name: Compile xgboost pipeline
+        run: |
+          for pipeline in training prediction; do
+            make compile-pipeline PIPELINE_TEMPLATE=xgboost pipeline=$pipeline
+          done
