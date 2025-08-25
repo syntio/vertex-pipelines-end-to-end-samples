@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 import pathlib
 
@@ -75,7 +74,6 @@ def tensorflow_pipeline(
 
     # Create variables to ensure the same arguments are passed
     # into different components of the pipeline
-    file_pattern = ""  # e.g. "files-*.csv", used as file pattern on storage
     time_column = "trip_start_timestamp"
     ingestion_table = "taxi_trips"
     table_suffix = "_tf_prediction"  # suffix to table names
@@ -125,7 +123,7 @@ def tensorflow_pipeline(
     instance_config = {"instanceType": "object"}
 
     # predict data
-    batch_prediction = (
+    (
         model_batch_predict(
             model=champion_model.outputs["model"],
             job_display_name="my-tensorflow-batch-prediction-job",

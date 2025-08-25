@@ -94,7 +94,7 @@ module "cloudfunction" {
   description                   = var.cloudfunction_description
   source_dir                    = "../../../pipelines/src/pipelines/trigger"
   source_code_bucket_name       = google_storage_bucket.cf_staging_bucket.name
-  runtime                       = "python39"
+  runtime                       = "python311"
   entry_point                   = "cf_handler"
   cf_service_account            = google_service_account.vertex_cloudfunction_sa.email
   vpc_connector                 = var.cloudfunction_vpc_connector

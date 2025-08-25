@@ -240,7 +240,7 @@ logging.info(f"Training feature names: {train_features}")
 logging.info(f"Validation feature names: {valid_features}")
 
 if len(train_features) != len(valid_features):
-    raise RuntimeError(f"No. of training features != # validation features")
+    raise RuntimeError("No. of training features != # validation features")
 
 with strategy.scope():
     tf_model = build_and_compile_model(train_ds, hparams)
