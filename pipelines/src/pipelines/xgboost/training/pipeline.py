@@ -239,7 +239,7 @@ def xgboost_pipeline(
         project_location=project_location,
     ).set_display_name("Import evaluation")
 
-    with dsl.Condition(existing_model != "", "champion-exists"):
+    with dsl.If(existing_model != "", "champion-exists"):
         update_best_model(
             challenger=train_model.outputs["model"],
             challenger_evaluation=evaluation.outputs["model_evaluation"],
