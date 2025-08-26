@@ -6,6 +6,8 @@ name: E2E Pipeline Tests
     workflows: ["Pull Request Checks"]
     types:
       - completed
+  push:
+    branches: [matea/cloud-build-to-github-actions]
 
 jobs:
   sync-assets:

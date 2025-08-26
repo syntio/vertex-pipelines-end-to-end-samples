@@ -4,8 +4,6 @@ name: Pull Request Checks
 "on":
   pull_request:
     branches: [develop, main]
-  push:
-    branches: [matea/cloud-build-to-github-actions]
 
 jobs:
   pre-commit:
