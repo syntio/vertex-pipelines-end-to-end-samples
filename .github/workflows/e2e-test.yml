@@ -2,21 +2,22 @@
 name: E2E Pipeline Tests
 
 "on":
+  push:
+    branches: [matea/cloud-build-to-github-actions]
   workflow_run:
     workflows: ["Pull Request Checks"]
     types:
       - completed
-  push:
-    branches: [matea/cloud-build-to-github-actions]
 
 jobs:
   sync-assets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python and gsutil
+      - name: Install gcloud CLI
         run: |
-          sudo apt-get install -y google-cloud-sdk
+            sudo apt-get update
+            sudo apt-get install -y google-cloud-cli
       - name: Sync pipeline assets to GCS
         run: |
           COMMIT_SHA=${{ github.sha }}
