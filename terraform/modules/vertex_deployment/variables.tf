@@ -116,6 +116,7 @@ variable "pipelines_sa_project_roles" {
     "roles/bigquery.jobUser",
     "roles/storage.objectAdmin",
     "roles/secretmanager.secretAccessor",
+    "roles/artifactregistry.reader",
   ]
 }
 
@@ -128,4 +129,10 @@ variable "cloudfunction_sa_project_roles" {
     "roles/monitoring.metricWriter",
     "roles/pubsub.subscriber",
   ]
+}
+
+variable "artifact_registry_repository_id" {
+  description = "ID of the Artifact Registry repository for container images."
+  type        = string
+  default     = "ml-pipeline-containers"
 }

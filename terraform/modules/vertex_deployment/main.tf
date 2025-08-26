@@ -113,6 +113,59 @@ module "cloudfunction" {
   depends_on = [google_project_service.gcp_services]
 }
 
+## Artifact Registry ##
+resource "google_artifact_registry_repository" "container_repository" {
+  repository_id = var.artifact_registry_repository_id
+  location      = var.region
+  project       = var.project_id
+  description   = "Container repository for ML pipeline components"
+  format        = "DOCKER"
+  depends_on    = [google_project_service.gcp_services]
+}
+
+## Secret Manager ##
+resource "google_secret_manager_secret" "pipeline_config" {
+  secret_id = "pipeline-config"
+  project   = var.project_id
+
+  replication {
+    automatic = true
+  }
+
+  depends_on = [google_project_service.gcp_services]
+}
+
+resource "google_secret_manager_secret_version" "pipeline_config_version" {
+  secret = google_secret_manager_secret.pipeline_config.id
+  secret_data = jsonencode({
+    environment = "dev"
+    debug_mode  = false
+    batch_size  = 1000
+  })
+}
+
+resource "google_secret_manager_secret" "model_config" {
+  secret_id = "model-config"
+  project   = var.project_id
+
+  replication {
+    automatic = true
+  }
+
+  depends_on = [google_project_service.gcp_services]
+}
+
+resource "google_secret_manager_secret_version" "model_config_version" {
+  secret = google_secret_manager_secret.model_config.id
+  secret_data = jsonencode({
+    hyperparameters = {
+      learning_rate = 0.01
+      epochs        = 100
+    }
+    model_version = "v1.0"
+  })
+}
+
 ## Vertex Metadata store ##
 resource "google_vertex_ai_metadata_store" "default_metadata_store" {
   provider    = google-beta

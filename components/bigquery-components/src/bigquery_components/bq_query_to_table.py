@@ -16,8 +16,10 @@ from kfp.dsl import component
 
 
 @component(
-    base_image="python:3.11",
-    packages_to_install=["google-cloud-bigquery"],
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def bq_query_to_table(
     query: str,
