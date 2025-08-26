@@ -9,6 +9,10 @@ name: E2E Pipeline Tests
     types:
       - completed
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   sync-assets:
     runs-on: ubuntu-latest
