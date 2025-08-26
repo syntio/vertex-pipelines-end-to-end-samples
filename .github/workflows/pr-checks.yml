@@ -5,7 +5,7 @@ name: Pull Request Checks
   pull_request:
     branches: [develop, main]
   push:
-    branches: [matea/testing-vertex-ai-pipeline-exec]
+    branches: [matea/cloud-build-to-github-actions]
 
 jobs:
   pre-commit:
