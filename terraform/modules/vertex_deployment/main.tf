@@ -136,7 +136,7 @@ resource "google_secret_manager_secret" "pipeline_config" {
 }
 
 resource "google_secret_manager_secret_version" "pipeline_config_version" {
-  secret      = google_secret_manager_secret.pipeline_config.id
+  secret = google_secret_manager_secret.pipeline_config.id
   secret_data = jsonencode({
     environment = "dev"
     debug_mode  = false
@@ -156,7 +156,7 @@ resource "google_secret_manager_secret" "model_config" {
 }
 
 resource "google_secret_manager_secret_version" "model_config_version" {
-  secret      = google_secret_manager_secret.model_config.id
+  secret = google_secret_manager_secret.model_config.id
   secret_data = jsonencode({
     hyperparameters = {
       learning_rate = 0.01
