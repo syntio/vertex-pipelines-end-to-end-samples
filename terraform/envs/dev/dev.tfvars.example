@@ -1,0 +1,31 @@
+# Vertex Pipelines Development Environment Configuration
+# Copy this file to 'dev.tfvars' and update with your values
+
+# GCP Configuration
+project_id = "your-project-id"
+region     = "europe-west2"
+
+# GitHub Actions Authentication (for CI/CD deployment)
+github_repository_owner = "your-github-org"
+github_repository_name  = "your-repo-name"
+
+# Resource Naming
+name_prefix = "ml-ops-turbo"  # Prefix to distinguish different ML workloads
+
+# Workload Identity Pool is auto-generated from project_id + repository hash
+
+# Optional: Cloud Scheduler Configuration (uncomment to enable scheduled pipeline runs)
+# cloud_schedulers_config = {
+#   daily_training = {
+#     name                = "daily-training-pipeline"
+#     description         = "Runs training pipeline daily at 2 AM"
+#     schedule            = "0 2 * * *"
+#     time_zone           = "UTC"
+#     template_path       = "gs://your-project-pl-assets/training.json"
+#     enable_caching      = true
+#     pipeline_parameters = {
+#       model_type = "tensorflow"
+#       epochs     = 100
+#     }
+#   }
+# }
