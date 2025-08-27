@@ -31,7 +31,7 @@ output "workload_identity_pool_id" {
 
 output "github_actions_setup_instructions" {
   description = "Instructions for setting up GitHub Actions secrets"
-  value = <<-EOT
+  value       = <<-EOT
     Add these secrets to your GitHub repository:
     
     1. WORKLOAD_IDENTITY_PROVIDER: ${google_iam_workload_identity_pool_provider.github.name}

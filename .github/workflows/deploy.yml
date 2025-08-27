@@ -1,6 +1,7 @@
+---
 name: Deploy Infrastructure and Pipelines
 
-on:
+"on":
   push:
     branches: [develop]
   release:
@@ -99,9 +100,14 @@ jobs:
       - name: Deploy Infrastructure
         run: |
           cd terraform/envs/dev
-          terraform init -input=false -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
-          terraform plan -input=false -var="project_id=${{ needs.pre-checks.outputs.project-id }}" -var="region=${{ env.REGION }}"
-          terraform apply -auto-approve -input=false -var="project_id=${{ needs.pre-checks.outputs.project-id }}" -var="region=${{ env.REGION }}"
+          terraform init -input=false \
+            -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
+          terraform plan -input=false \
+            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="region=${{ env.REGION }}"
+          terraform apply -auto-approve -input=false \
+            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="region=${{ env.REGION }}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -171,9 +177,14 @@ jobs:
       - name: Deploy Infrastructure
         run: |
           cd terraform/envs/test
-          terraform init -input=false -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
-          terraform plan -input=false -var="project_id=${{ needs.pre-checks.outputs.project-id }}" -var="region=${{ env.REGION }}"
-          terraform apply -auto-approve -input=false -var="project_id=${{ needs.pre-checks.outputs.project-id }}" -var="region=${{ env.REGION }}"
+          terraform init -input=false \
+            -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
+          terraform plan -input=false \
+            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="region=${{ env.REGION }}"
+          terraform apply -auto-approve -input=false \
+            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="region=${{ env.REGION }}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -225,8 +236,11 @@ jobs:
       - name: Terraform Plan (Production)
         run: |
           cd terraform/envs/prod
-          terraform init -input=false -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
-          terraform plan -input=false -var="project_id=${{ needs.pre-checks.outputs.project-id }}" -var="region=${{ env.REGION }}"
+          terraform init -input=false \
+            -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
+          terraform plan -input=false \
+            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="region=${{ env.REGION }}"
 
       - name: Manual Approval Checkpoint
         run: |
@@ -236,7 +250,9 @@ jobs:
       - name: Deploy Infrastructure (Production)
         run: |
           cd terraform/envs/prod
-          terraform apply -auto-approve -input=false -var="project_id=${{ needs.pre-checks.outputs.project-id }}" -var="region=${{ env.REGION }}"
+          terraform apply -auto-approve -input=false \
+            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="region=${{ env.REGION }}"
 
       - name: Set up Python
         uses: actions/setup-python@v5

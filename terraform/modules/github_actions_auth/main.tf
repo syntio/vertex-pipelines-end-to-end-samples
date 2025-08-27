@@ -20,19 +20,19 @@
 resource "google_iam_workload_identity_pool" "github_actions" {
   project                   = var.project_id
   workload_identity_pool_id = "gh-${join("", [for word in split("-", var.github_repository_name) : substr(word, 0, 1)])}-${substr(md5(var.project_id), 0, 12)}"
-  display_name             = "GitHub Actions Identity Pool"
-  description              = "Identity pool for GitHub Actions workflows"
-  
+  display_name              = "GitHub Actions Identity Pool"
+  description               = "Identity pool for GitHub Actions workflows"
+
   depends_on = [var.enable_apis]
 }
 
 # Workload Identity Provider for GitHub
 resource "google_iam_workload_identity_pool_provider" "github" {
   project                            = var.project_id
-  workload_identity_pool_id         = google_iam_workload_identity_pool.github_actions.workload_identity_pool_id
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_actions.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-provider"
-  display_name                      = "GitHub Provider"
-  description                       = "OIDC identity provider for GitHub Actions"
+  display_name                       = "GitHub Provider"
+  description                        = "OIDC identity provider for GitHub Actions"
 
   attribute_mapping = {
     "google.subject"             = "assertion.sub"
@@ -78,13 +78,13 @@ resource "google_project_iam_member" "github_actions_permissions" {
 # Allow GitHub Actions to impersonate the service account
 resource "google_service_account_iam_member" "github_actions_workload_identity" {
   service_account_id = google_service_account.github_actions.name
-  role              = "roles/iam.workloadIdentityUser"
-  member            = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/*"
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/*"
 }
 
 # Grant access to specific repositories (more restrictive alternative)
 resource "google_service_account_iam_member" "github_actions_repo_specific" {
   service_account_id = google_service_account.github_actions.name
-  role              = "roles/iam.workloadIdentityUser"
-  member            = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/${var.github_repository_owner}/${var.github_repository_name}"
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/${var.github_repository_owner}/${var.github_repository_name}"
 }

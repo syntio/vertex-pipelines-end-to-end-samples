@@ -37,36 +37,36 @@ variable "github_actions_sa_roles" {
   default = [
     # Terraform state management
     "roles/storage.admin",
-    
+
     # Terraform resource management
     "roles/editor",
-    
+
     # IAM management for service accounts
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountKeyAdmin",
-    
+
     # Secret Manager
     "roles/secretmanager.admin",
-    
+
     # Artifact Registry
     "roles/artifactregistry.admin",
-    
+
     # Cloud Functions
     "roles/cloudfunctions.admin",
     "roles/cloudbuild.builds.editor",
-    
+
     # Pub/Sub
     "roles/pubsub.admin",
-    
+
     # Vertex AI
     "roles/aiplatform.admin",
-    
+
     # Cloud Storage
     "roles/storage.objectAdmin",
-    
+
     # Enable APIs
     "roles/serviceusage.serviceUsageAdmin",
-    
+
     # Monitoring and logging
     "roles/monitoring.editor",
     "roles/logging.configWriter"

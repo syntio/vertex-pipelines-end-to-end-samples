@@ -46,11 +46,11 @@ module "vertex_deployment" {
 
 # GitHub Actions authentication setup (only for dev environment)
 module "github_actions_auth" {
-  source                     = "../../modules/github_actions_auth"
-  project_id                 = var.project_id
-  github_repository_owner    = var.github_repository_owner
-  github_repository_name     = var.github_repository_name
-  enable_apis               = module.vertex_deployment.gcp_services
+  source                  = "../../modules/github_actions_auth"
+  project_id              = var.project_id
+  github_repository_owner = var.github_repository_owner
+  github_repository_name  = var.github_repository_name
+  enable_apis             = module.vertex_deployment.gcp_services
 }
 
 # Cloud Scheduler jobs (for triggering pipelines)
