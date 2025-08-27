@@ -23,7 +23,7 @@ env:
   PROJECT_ID_TEST: ${{ secrets.PROJECT_ID_TEST }}
   REGION: ${{ secrets.REGION || 'europe-west2' }}
   WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-  SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
+  GITHUB_ACTIONS_SERVICE_ACCOUNT: ${{ secrets.GITHUB_ACTIONS_SERVICE_ACCOUNT }}
 
 jobs:
   # Pre-deployment checks
@@ -90,7 +90,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
+          service_account: ${{ env.GITHUB_ACTIONS_SERVICE_ACCOUNT }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -167,7 +167,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
+          service_account: ${{ env.GITHUB_ACTIONS_SERVICE_ACCOUNT }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -227,7 +227,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
+          service_account: ${{ env.GITHUB_ACTIONS_SERVICE_ACCOUNT }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
