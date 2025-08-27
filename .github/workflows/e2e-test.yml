@@ -21,7 +21,7 @@ jobs:
       - name: Auth to GCP
         uses: google-github-actions/auth@v2
         with:
-          service_account: '${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}'
+          service_account: '${{ secrets.GHA_SERVICE_ACCOUNT }}'
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
@@ -49,7 +49,7 @@ jobs:
       - name: Auth to GCP
         uses: google-github-actions/auth@v2
         with:
-          service_account: '${{ secrets.SERVICE_ACCOUNT }}'
+          service_account: '${{ secrets.GHA_SERVICE_ACCOUNT }}'
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
 
       - name: Set up Python
@@ -85,7 +85,7 @@ jobs:
       - name: Auth to GCP
         uses: google-github-actions/auth@v2
         with:
-          service_account: '${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}'
+          service_account: '${{ secrets.GHA_SERVICE_ACCOUNT }}'
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
 
       - name: Set up Python
