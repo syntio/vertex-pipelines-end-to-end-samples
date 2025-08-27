@@ -64,7 +64,7 @@ Add these secrets to your GitHub repository (`Settings` → `Secrets and variabl
 ```bash
 # Authentication (get exact values from terraform output)
 WORKLOAD_IDENTITY_PROVIDER=projects/304309528954/locations/global/workloadIdentityPools/gh-vpetes-4d532027c607/providers/github-provider
-GITHUB_ACTIONS_SERVICE_ACCOUNT=github-actions-deploy@syntio-ai-ops.iam.gserviceaccount.com
+GHA_SERVICE_ACCOUNT=github-actions-deploy@syntio-ai-ops.iam.gserviceaccount.com
 
 # Project Configuration (single project architecture)
 PROJECT_ID_DEV=syntio-ai-ops
