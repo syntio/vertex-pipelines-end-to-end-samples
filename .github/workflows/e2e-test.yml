@@ -25,11 +25,6 @@ jobs:
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-      - name: Debug GCP Auth
-        run: |
-          gcloud auth list
-          gcloud config list
-          gcloud auth print-access-token
       - name: Sync pipeline assets to GCS
         run: |
           COMMIT_SHA=${{ github.sha }}
@@ -50,6 +45,11 @@ jobs:
         pipeline: [training, prediction]
     steps:
       - uses: actions/checkout@v4
+      - name: Auth to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          service_account: '${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}'
+          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
