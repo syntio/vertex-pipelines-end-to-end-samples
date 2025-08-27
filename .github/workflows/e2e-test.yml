@@ -4,10 +4,10 @@ name: E2E Pipeline Tests
 "on":
   push:
     branches: [matea/cloud-build-to-github-actions]
-  workflow_run:
-    workflows: ["Pull Request Checks"]
-    types:
-      - completed
+#   workflow_run:
+#     workflows: ["Pull Request Checks"]
+#     types:
+#       - completed
 
 permissions:
   id-token: write
