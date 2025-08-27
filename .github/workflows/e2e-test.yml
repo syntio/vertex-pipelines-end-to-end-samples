@@ -39,6 +39,7 @@ jobs:
   e2e-train:
     name: E2E Training - ${{ matrix.pipeline_template }}
     runs-on: ubuntu-latest
+    needs: sync-assets
     strategy:
       matrix:
         pipeline_template: [tensorflow, xgboost]
