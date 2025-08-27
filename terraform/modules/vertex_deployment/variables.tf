@@ -116,6 +116,8 @@ variable "pipelines_sa_project_roles" {
     "roles/bigquery.jobUser",
     "roles/storage.objectAdmin",
     "roles/secretmanager.secretAccessor",
+    "roles/iam.workloadIdentityUser",
+    "iam.serviceAccounts.getAccessToken"
   ]
 }
 

@@ -23,6 +23,11 @@ jobs:
         with:
           service_account: '${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}'
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
+      - name: Print repository info
+        run: |
+            echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+            echo "github.event.pull_request.head.repo.full_name: ${{ github.event.pull_request.head.repo.full_name }}"
+
       - name: Install gcloud CLI
         run: |
             sudo apt-get update
