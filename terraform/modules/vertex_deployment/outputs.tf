@@ -54,7 +54,3 @@ output "gcp_services" {
   value       = google_project_service.gcp_services
   description = "GCP services enabled for the project"
 }
-
-
-
-
