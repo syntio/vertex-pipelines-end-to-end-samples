@@ -18,15 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install gcloud CLI
-        run: |
-            sudo apt-get update
-            sudo apt-get install -y google-cloud-cli
       - name: Auth to GCP
         uses: google-github-actions/auth@v2
         with:
           service_account: '${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}'
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
+      - name: Install gcloud CLI
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y google-cloud-cli
       - name: Sync pipeline assets to GCS
         run: |
           COMMIT_SHA=${{ github.sha }}
