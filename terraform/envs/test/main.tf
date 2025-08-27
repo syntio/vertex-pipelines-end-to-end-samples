@@ -37,9 +37,11 @@ terraform {
 
 # Core Vertex Pipelines infrastructure
 module "vertex_deployment" {
-  source     = "../../modules/vertex_deployment"
-  project_id = var.project_id
-  region     = var.region
+  source      = "../../modules/vertex_deployment"
+  project_id  = var.project_id
+  region      = var.region
+  environment = "test"
+  name_prefix = var.name_prefix
 }
 
 # Cloud Scheduler jobs (for triggering pipelines)

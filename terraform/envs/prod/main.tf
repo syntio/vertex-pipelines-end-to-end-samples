@@ -41,6 +41,7 @@ module "vertex_deployment" {
   project_id  = var.project_id
   region      = var.region
   environment = "prod"
+  name_prefix = var.name_prefix
 }
 
 # Cloud Scheduler jobs (for triggering pipelines)
