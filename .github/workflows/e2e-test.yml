@@ -1,112 +1,47 @@
 ---
-name: E2E Pipeline Tests
+name: Trigger Cloud build E2E Pipeline Tests
 
 "on":
   push:
     branches: [matea/cloud-build-to-github-actions]
-#   workflow_run:
-#     workflows: ["Pull Request Checks"]
-#     types:
-#       - completed
 
 permissions:
-  id-token: write
   contents: read
+  id-token: write
 
 jobs:
-  sync-assets:
+  trigger-cloud-build:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        pipeline_template: [tensorflow, xgboost]
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Auth to GCP
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          service_account: '${{ secrets.GHA_SERVICE_ACCOUNT }}'
-          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GHA_SERVICE_ACCOUNT }}
+
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
-      - name: Sync pipeline assets to GCS
-        run: |
-          COMMIT_SHA=${{ github.sha }}
-          for template in tensorflow xgboost; do
-            mkdir -p "$COMMIT_SHA/training/assets"
-            mkdir -p "$COMMIT_SHA/prediction/assets"
-            cp -r pipelines/src/pipelines/$template/training/assets "$COMMIT_SHA/training/"
-            cp -r pipelines/src/pipelines/$template/prediction/assets "$COMMIT_SHA/prediction/"
-            gsutil cp -r "$COMMIT_SHA" "gs://${{ secrets.PIPELINE_PUBLISH_GCS_PATH }}$template/$COMMIT_SHA"
-          done
 
-  e2e-train:
-    name: E2E Training - ${{ matrix.pipeline_template }}
-    runs-on: ubuntu-latest
-    needs: sync-assets
-    strategy:
-      matrix:
-        pipeline_template: [tensorflow, xgboost]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Auth to GCP
-        uses: google-github-actions/auth@v2
+      - name: Trigger Cloud Build
+        uses: google-github-actions/cloud-build@v0
         with:
-          service_account: '${{ secrets.GHA_SERVICE_ACCOUNT }}'
-          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Run training E2E test
-        run: |
-          make setup && \
-          make e2e-tests pipeline=training \
-            enable_pipeline_caching=False \
-            sync_assets=false
-        env:
-          PIPELINE_TEMPLATE: ${{ matrix.pipeline_template }}
-          VERTEX_PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          VERTEX_LOCATION: ${{ secrets.REGION }}
-          VERTEX_SA_EMAIL: ${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}
-          VERTEX_CMEK_IDENTIFIER: ""
-          VERTEX_PIPELINE_ROOT: ${{ secrets.PIPELINE_ROOT }}
-          PIPELINE_FILES_GCS_PATH: ${{ secrets.PIPELINE_PUBLISH_GCS_PATH }}training/${{ github.sha }}
-
-  e2e-predict:
-    name: E2E Prediction - ${{ matrix.pipeline_template }}
-    runs-on: ubuntu-latest
-    needs: e2e-train
-    strategy:
-      matrix:
-        pipeline_template: [tensorflow, xgboost]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Auth to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          service_account: '${{ secrets.GHA_SERVICE_ACCOUNT }}'
-          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: make setup
-
-      - name: Run prediction E2E test
-        run: |
-          make e2e-tests pipeline=prediction \
-            enable_pipeline_caching=False \
-            sync_assets=false
-        env:
-          PIPELINE_TEMPLATE: ${{ matrix.pipeline_template }}
-          VERTEX_PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          VERTEX_LOCATION: ${{ secrets.REGION }}
-          VERTEX_SA_EMAIL: ${{ secrets.VERTEX_PIPELINE_SA_EMAIL }}
-          VERTEX_CMEK_IDENTIFIER: ""
-          VERTEX_NETWORK: ""
-          VERTEX_PIPELINE_ROOT: ${{ secrets.PIPELINE_ROOT }}
-          PIPELINE_FILES_GCS_PATH: ${{ secrets.PIPELINE_PUBLISH_GCS_PATH }}prediction/${{ github.sha }}
+          project_id: ${{ secrets.PROJECT_ID }}
+          config: cloudbuild/e2e-test.yaml
+          substitutions: |
+            _PIPELINE_TEMPLATE=${{ matrix.pipeline_template }},
+            _PIPELINE_PUBLISH_GCS_PATH=${{ secrets.PIPELINE_PUBLISH_GCS_PATH }},
+            _TEST_VERTEX_LOCATION=${{ secrets.REGION }},
+            _TEST_VERTEX_PROJECT_ID=${{ secrets.PROJECT_ID }},
+            _TEST_VERTEX_SA_EMAIL=${{ secrets.VERTEX_PIPELINE_SA_EMAIL }},
+            _TEST_VERTEX_CMEK_IDENTIFIER="",
+            _TEST_VERTEX_NETWORK="",
+            _TEST_VERTEX_PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }},
+            COMMIT_SHA=${{ github.sha }}
