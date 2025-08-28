@@ -37,7 +37,7 @@ jobs:
             --config=cloudbuild/e2e-test.yaml \
             --substitutions="\
             _PIPELINE_TEMPLATE=${{ matrix.pipeline_template }},\
-            _PIPELINE_PUBLISH_GCS_PATH=${{ secrets.PIPELINE_PUBLISH_GCS_PATH }},\
+            _PIPELINE_PUBLISH_GCS_PATH=${{ secrets.PIPELINE_PUBLISH_GCS_PATH }}${{ matrix.pipeline_template }},\
             _TEST_VERTEX_LOCATION=${{ secrets.REGION }},\
             _TEST_VERTEX_PROJECT_ID=${{ secrets.PROJECT_ID }},\
             _TEST_VERTEX_SA_EMAIL=${{ secrets.VERTEX_PIPELINE_SA_EMAIL }},\
