@@ -20,6 +20,10 @@ name: Deploy Infrastructure and Pipelines
         options:
           - dev
 
+permissions:
+  contents: read
+  id-token: write
+
 env:
   # These will be set via repository secrets
   PROJECT_ID_DEV: ${{ secrets.PROJECT_ID_DEV }}
