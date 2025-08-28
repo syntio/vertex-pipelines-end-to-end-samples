@@ -51,6 +51,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
       assertion.ref == "refs/heads/develop" ||
       assertion.ref == "refs/heads/main" ||
       assertion.ref == "refs/heads/matea/cloud-build-to-github-actions" ||
+      assertion.ref == "refs/heads/ivanv/github-actions-deployment" ||
       assertion.ref_type == "tag" ||
       assertion.event_name == "workflow_dispatch"
     )
