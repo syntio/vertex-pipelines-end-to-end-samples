@@ -43,12 +43,14 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 
   # Restrict to specific repository and branches
+  # NOTE: matea/cloud-build-to-github-actions branch is TEMPORARY - remove after testing
   attribute_condition = <<-EOT
     assertion.repository_owner == "${var.github_repository_owner}" &&
     assertion.repository == "${var.github_repository_owner}/${var.github_repository_name}" &&
     (
       assertion.ref == "refs/heads/develop" ||
       assertion.ref == "refs/heads/main" ||
+      assertion.ref == "refs/heads/matea/cloud-build-to-github-actions" ||
       assertion.ref_type == "tag" ||
       assertion.event_name == "workflow_dispatch"
     )

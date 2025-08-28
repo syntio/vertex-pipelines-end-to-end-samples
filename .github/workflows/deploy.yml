@@ -2,8 +2,6 @@
 name: Deploy Infrastructure and Pipelines
 
 "on":
-  push:
-    branches: [ivanv/github-actions-deployment]  # Temporary for testing
   workflow_run:
     workflows: ["Pull Request Checks"]
     types: [completed]
@@ -97,9 +95,11 @@ jobs:
           terraform init -input=false \
             -backend-config="bucket=${{ env.PROJECT_ID_DEV }}-tfstate"
           terraform plan -input=false \
+            -var-file="dev.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
             -var="region=${{ env.REGION }}"
           terraform apply -auto-approve -input=false \
+            -var-file="dev.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
             -var="region=${{ env.REGION }}"
 
