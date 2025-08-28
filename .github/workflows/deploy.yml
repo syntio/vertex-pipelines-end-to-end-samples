@@ -49,6 +49,8 @@ jobs:
       - name: Determine environment
         id: determine-env
         run: |
+          echo "DEBUG: Event name is '${{ github.event_name }}'"
+          echo "DEBUG: PROJECT_ID_DEV is '${{ env.PROJECT_ID_DEV }}'"
           if [[ "${{ github.event_name }}" == "release" ]]; then
             echo "environment=prod" >> $GITHUB_OUTPUT
             echo "project-id=${{ env.PROJECT_ID_PROD }}" >> $GITHUB_OUTPUT
