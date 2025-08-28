@@ -33,8 +33,8 @@ setup: ## Set up local environment for Python development on pipelines
 	@cd pipelines && \
 	python3.11 -m venv venv311 && \
 	$(ACTIVATE) \
-	python -m pip install --upgrade pip && \
-	pip install -r requirements.txt
+	venv311/bin/pip install --upgrade pip && \
+	venv311/bin/pip install -r requirements.txt
 
 test-trigger: ## Runs unit tests for the pipeline trigger code
 	@cd pipelines && \
