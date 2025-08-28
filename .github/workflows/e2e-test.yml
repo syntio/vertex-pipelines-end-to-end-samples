@@ -31,17 +31,17 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Trigger Cloud Build
-        uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          project_id: ${{ secrets.PROJECT_ID }}
-          config: cloudbuild/e2e-test.yaml
-          substitutions: |
-            _PIPELINE_TEMPLATE=${{ matrix.pipeline_template }},
-            _PIPELINE_PUBLISH_GCS_PATH=${{ secrets.PIPELINE_PUBLISH_GCS_PATH }},
-            _TEST_VERTEX_LOCATION=${{ secrets.REGION }},
-            _TEST_VERTEX_PROJECT_ID=${{ secrets.PROJECT_ID }},
-            _TEST_VERTEX_SA_EMAIL=${{ secrets.VERTEX_PIPELINE_SA_EMAIL }},
-            _TEST_VERTEX_CMEK_IDENTIFIER="",
-            _TEST_VERTEX_NETWORK="",
-            _TEST_VERTEX_PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }},
-            COMMIT_SHA=${{ github.sha }}
+        run: |
+            gcloud builds submit \
+            --project=${{ secrets.PROJECT_ID }} \
+            --config=cloudbuild/e2e-test.yaml \
+            --substitutions='
+                _PIPELINE_TEMPLATE=${{ matrix.pipeline_template }},
+                _PIPELINE_PUBLISH_GCS_PATH=${{ secrets.PIPELINE_PUBLISH_GCS_PATH }},
+                _TEST_VERTEX_LOCATION=${{ secrets.REGION }},
+                _TEST_VERTEX_PROJECT_ID=${{ secrets.PROJECT_ID }},
+                _TEST_VERTEX_SA_EMAIL=${{ secrets.VERTEX_PIPELINE_SA_EMAIL }},
+                _TEST_VERTEX_CMEK_IDENTIFIER="",
+                _TEST_VERTEX_NETWORK="",
+                _TEST_VERTEX_PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }},
+                COMMIT_SHA=${{ github.sha }}'
