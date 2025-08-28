@@ -91,15 +91,16 @@ jobs:
 
       - name: Deploy Infrastructure
         run: |
-          echo "DEBUG: About to use bucket: ${{ needs.pre-checks.outputs.project-id }}-tfstate"
+          echo "DEBUG: Using PROJECT_ID_DEV directly: ${{ env.PROJECT_ID_DEV }}"
+          echo "DEBUG: About to use bucket: ${{ env.PROJECT_ID_DEV }}-tfstate"
           cd terraform/envs/dev
           terraform init -input=false \
-            -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
+            -backend-config="bucket=${{ env.PROJECT_ID_DEV }}-tfstate"
           terraform plan -input=false \
-            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="project_id=${{ env.PROJECT_ID_DEV }}" \
             -var="region=${{ env.REGION }}"
           terraform apply -auto-approve -input=false \
-            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="project_id=${{ env.PROJECT_ID_DEV }}" \
             -var="region=${{ env.REGION }}"
 
       - name: Set up Python
