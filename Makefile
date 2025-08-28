@@ -16,10 +16,17 @@
 export
 
 ifndef CI
-    ACTIVATE = source venv311/bin/activate && 
-else
+  ifeq ($(SHELL_TYPE),bash)
+    ACTIVATE = source venv311/bin/activate &&
+  else ifeq ($(SHELL_TYPE),sh)
+    ACTIVATE = . venv311/bin/activate &&
+  else
     ACTIVATE =
+  endif
+else
+  ACTIVATE =
 endif
+
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -33,7 +40,7 @@ setup: ## Set up local environment for Python development on pipelines
 	@cd pipelines && \
 	python3.11 -m venv venv311 && \
 	$(ACTIVATE) \
-	pip install --upgrade pip && \
+	python -m pip install --upgrade pip && \
 	pip install -r requirements.txt
 
 test-trigger: ## Runs unit tests for the pipeline trigger code

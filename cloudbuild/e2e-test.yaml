@@ -34,12 +34,6 @@ steps:
     args:
       - -c
       - |
-        echo "CI variable: $CI"
-  - name: python:3.11
-    entrypoint: bash
-    args:
-      - -c
-      - |
         make setup && \
         make e2e-tests pipeline=training enable_pipeline_caching=False sync_assets=false && \
         make e2e-tests pipeline=prediction enable_pipeline_caching=False sync_assets=false
