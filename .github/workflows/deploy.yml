@@ -2,6 +2,8 @@
 name: Deploy Infrastructure and Pipelines
 
 "on":
+  push:
+    branches: [ivanv/github-actions-deployment]  # Temporary to update workflow
   workflow_run:
     workflows: ["Pull Request Checks"]
     types: [completed]
