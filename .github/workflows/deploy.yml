@@ -92,6 +92,7 @@ jobs:
 
       - name: Deploy Infrastructure
         run: |
+          echo "DEBUG: About to use bucket: ${{ needs.pre-checks.outputs.project-id }}-tfstate"
           cd terraform/envs/dev
           terraform init -input=false \
             -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
