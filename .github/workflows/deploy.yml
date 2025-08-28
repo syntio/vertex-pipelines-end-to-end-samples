@@ -38,7 +38,6 @@ jobs:
   pre-checks:
     name: Pre-deployment Checks
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     outputs:
       environment: ${{ steps.determine-env.outputs.environment }}
       project-id: ${{ steps.determine-env.outputs.project-id }}
