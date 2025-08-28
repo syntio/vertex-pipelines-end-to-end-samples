@@ -31,7 +31,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Trigger Cloud Build
-        uses: google-github-actions/cloud-build@v0
+        uses: google-github-actions/deploy-cloudrun@v1
         with:
           project_id: ${{ secrets.PROJECT_ID }}
           config: cloudbuild/e2e-test.yaml
