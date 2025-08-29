@@ -2,7 +2,7 @@ from kfp import dsl, compiler
 from google.cloud import aiplatform
 from bq_query_to_table import bq_query_to_table
 from extract_bq_to_dataset import extract_bq_to_dataset
-from run_scan import run_scan
+from dataplex_components import run_dq_scan as run_scan
 
 from datetime import datetime
 
