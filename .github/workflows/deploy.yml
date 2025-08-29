@@ -50,10 +50,11 @@ jobs:
             echo "environment=prod" >> $GITHUB_OUTPUT
             echo "project-id=${{ env.PROJECT_ID_PROD }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
-            if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
+            ENV_INPUT="${{ github.event.inputs.environment || 'dev' }}"
+            echo "environment=$ENV_INPUT" >> $GITHUB_OUTPUT
+            if [[ "$ENV_INPUT" == "prod" ]]; then
               echo "project-id=${{ env.PROJECT_ID_PROD }}" >> $GITHUB_OUTPUT
-            elif [[ "${{ github.event.inputs.environment }}" == "test" ]]; then
+            elif [[ "$ENV_INPUT" == "test" ]]; then
               echo "project-id=${{ env.PROJECT_ID_TEST }}" >> $GITHUB_OUTPUT
             else
               echo "project-id=${{ env.PROJECT_ID_DEV }}" >> $GITHUB_OUTPUT
