@@ -137,7 +137,7 @@ jobs:
           fi
 
           # Upload to GCS
-          gsutil -m cp -r pipeline-assets/* gs://${{ needs.pre-checks.outputs.project-id }}-pl-assets/
+          gsutil -m cp -r pipeline-assets/* gs://${{ env.PROJECT_ID_DEV }}-pl-assets/
 
 
   # Deploy to production environment (requires manual approval)
@@ -167,9 +167,9 @@ jobs:
         run: |
           cd terraform/envs/prod
           terraform init -input=false \
-            -backend-config="bucket=${{ needs.pre-checks.outputs.project-id }}-tfstate"
+            -backend-config="bucket=${{ env.PROJECT_ID_PROD }}-tfstate"
           terraform plan -input=false \
-            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="project_id=${{ env.PROJECT_ID_PROD }}" \
             -var="region=${{ env.REGION }}"
 
       - name: Manual Approval Checkpoint
@@ -181,7 +181,7 @@ jobs:
         run: |
           cd terraform/envs/prod
           terraform apply -auto-approve -input=false \
-            -var="project_id=${{ needs.pre-checks.outputs.project-id }}" \
+            -var="project_id=${{ env.PROJECT_ID_PROD }}" \
             -var="region=${{ env.REGION }}"
 
       - name: Set up Python
@@ -222,15 +222,15 @@ jobs:
 
           # Upload to GCS with version
           gsutil -m cp -r "pipeline-assets/$VERSION_DIR" \
-            gs://${{ needs.pre-checks.outputs.project-id }}-pl-assets/
+            gs://${{ env.PROJECT_ID_PROD }}-pl-assets/
 
           # Also update the latest version
           gsutil -m cp -r "pipeline-assets/$VERSION_DIR/"* \
-            gs://${{ needs.pre-checks.outputs.project-id }}-pl-assets/latest/
+            gs://${{ env.PROJECT_ID_PROD }}-pl-assets/latest/
 
       - name: Deployment Summary
         run: |
           echo "✅ Production deployment completed successfully"
           echo "📦 Version: ${{ github.event.release.tag_name || 'manual-deploy' }}"
-          echo "🗄️ Assets uploaded to: gs://${{ needs.pre-checks.outputs.project-id }}-pl-assets/"
-          echo "🏗️ Infrastructure deployed to: ${{ needs.pre-checks.outputs.project-id }}"
+          echo "🗄️ Assets uploaded to: gs://${{ env.PROJECT_ID_PROD }}-pl-assets/"
+          echo "🏗️ Infrastructure deployed to: ${{ env.PROJECT_ID_PROD }}"
