@@ -23,9 +23,10 @@ steps:
       - |
         mkdir -p ${COMMIT_SHA}/training/assets && \
         mkdir -p ${COMMIT_SHA}/prediction/assets && \
+        tree ${COMMIT_SHA} && \
         cp -r pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/training/assets ${COMMIT_SHA}/training/ && \
         cp -r pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/prediction/assets ${COMMIT_SHA}/prediction/ && \
-        gsutil cp -r ${COMMIT_SHA} gs://${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}/
+        gsutil cp -r ${COMMIT_SHA} gs://${_PIPELINE_PUBLISH_GCS_PATH}/
 
   # Install Python deps
   # Run end-to-end (E2E) pipeline tests on both pipelines
