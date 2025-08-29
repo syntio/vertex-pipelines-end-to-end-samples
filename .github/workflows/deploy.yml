@@ -113,10 +113,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Compile pipeline components
-        run: |
-          make compile-all-components
-
       - name: Compile pipelines
         run: |
           for template in tensorflow xgboost; do
