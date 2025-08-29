@@ -8,7 +8,7 @@ The GitHub Actions deployment workflow provides:
 - **Automated dev deployments** on merge to `develop` branch
 - **Manual prod deployments** with approval on releases/tags
 - **Secure authentication** via Workload Identity Federation (keyless)
-- **Multi-environment support** (dev, test, prod)
+- **Two-environment support** (dev, prod) - optimized for current requirements
 - **Infrastructure + Pipeline deployment** in a single workflow
 
 ## Architecture
@@ -150,18 +150,22 @@ gsutil ls gs://syntio-ai-ops-tfstate/
 - ✅ Set project ID and configuration
 
 ### Development Deployment (Automatic)
-**Trigger:** Push to `develop` branch
+**Trigger:** Push to `develop` branch or test branches (e.g., `ivanv/github-actions-deployment`)
 
 **Steps:**
-1. Deploy terraform infrastructure (`terraform/envs/dev/`)
-2. Compile pipeline components 
-3. Compile training + prediction pipelines (tensorflow, xgboost)
-4. Upload pipeline assets to GCS (`PROJECT_ID-pl-assets`)
+1. **Pre-checks**: Determine environment and project ID
+2. **Authenticate**: Using Workload Identity Federation
+3. **Setup**: Install gcloud SDK and Terraform
+4. **Deploy Infrastructure**: Execute terraform plan/apply for dev environment
+5. **Install Dependencies**: Python packages and pipeline components
+6. **Compile Pipelines**: Generate training.json and prediction.json for both tensorflow and xgboost
+7. **Upload Assets**: Copy compiled pipelines and training scripts to `gs://PROJECT_ID-pl-assets/`
 
-### Test Deployment (Manual)
-**Trigger:** Workflow dispatch with `environment: test`
-
-**Steps:** Same as dev deployment, but targets test project
+**What Gets Deployed:**
+- ✅ GCP infrastructure (BigQuery datasets, storage buckets, Vertex AI configs)
+- ✅ Compiled Kubeflow pipeline definitions
+- ✅ Training scripts (`train_tf_model.py`, `train_xgb_model.py`) 
+- ✅ Pipeline assets ready for execution
 
 ### Production Deployment (Manual + Approval)
 **Trigger:** Release/tag creation or workflow dispatch
@@ -179,7 +183,7 @@ gsutil ls gs://syntio-ai-ops-tfstate/
 gs://PROJECT_ID-pl-assets/
 ├── training.json                    # Latest training pipeline
 ├── prediction.json                  # Latest prediction pipeline  
-├── v1.0.0-20241201-143022/         # Versioned release
+├── v1.0.0-143022/                 # Versioned release
 │   ├── training/
 │   └── prediction/
 └── latest/                         # Symlink to latest version
@@ -216,18 +220,46 @@ If issues arise with GitHub Actions:
 3. **Debug GitHub Actions** without blocking deployments
 4. **Fix and re-test** GitHub Actions workflow
 
+## Deployment Status
+
+### ✅ Successfully Implemented
+
+**Current Status:**
+- ✅ **Workflow functional**: Automatic deployment on branch push working
+- ✅ **Infrastructure deployment**: Terraform successfully updates GCP resources  
+- ✅ **Pipeline compilation**: Both tensorflow and xgboost pipelines compile correctly
+- ✅ **Asset upload**: Pipeline files and training scripts uploaded to GCS
+- ✅ **Authentication**: Workload Identity Federation working with proper gcloud SDK setup
+
+**Deployed Assets (verified):**
+```bash
+gs://syntio-ai-ops-tfstate/default.tfstate     # Terraform state
+gs://syntio-ai-ops-pl-assets/training/         # Training pipeline + assets
+gs://syntio-ai-ops-pl-assets/prediction/       # Prediction pipeline
+```
+
+**Key Lessons Learned:**
+1. **gcloud SDK required**: `google-github-actions/setup-gcloud@v2` needed for `gsutil` commands
+2. **Environment variables preferred**: Using `${{ env.PROJECT_ID_DEV }}` instead of job outputs 
+3. **Pipeline paths**: Compiled files are in `pipelines/src/` not `pipelines/`
+4. **Component installation**: Custom components installed via `pip install -r requirements.txt`
+
 ## Usage Examples
 
 ### Deploy to Development
 ```bash
-# Automatic on merge
-git checkout develop
+# Automatic on merge to develop
+git checkout develop  
 git merge feature/my-changes
 git push origin develop
 # → Triggers automatic dev deployment
+
+# OR push to test branch (temporary for testing)
+git push origin ivanv/github-actions-deployment
+# → Also triggers dev deployment
 ```
 
-### Deploy to Production
+### Deploy to Production  
 ```bash
 # Create and push a release tag
 git tag -a v1.2.0 -m "Release v1.2.0"
@@ -237,15 +269,16 @@ git push origin v1.2.0
 
 ### Manual Deployment
 ```bash
-# Via GitHub UI: Actions → Deploy Infrastructure → Run workflow
-# Environment options: dev only (prod requires release/tag)
-# Manual dispatch restricted to development for testing
+# Via GitHub UI: Actions → "Deploy Infrastructure and Pipelines" → "Run workflow"
+# Select branch and environment (dev only for manual dispatch)
+# Production deployments require release/tag triggers
 ```
 
 ### Monitor Deployment
-- **GitHub Actions tab**: See workflow progress
-- **GCP Console**: Verify infrastructure changes
-- **Vertex AI Pipelines**: Confirm pipelines are available
+- **GitHub Actions**: https://github.com/syntio/vertex-pipelines-end-to-end-samples/actions
+- **GCP Console**: Verify infrastructure in Cloud Console
+- **Storage**: `gsutil ls -r gs://syntio-ai-ops-pl-assets/` to see deployed assets  
+- **Terraform**: `gsutil ls gs://syntio-ai-ops-tfstate/` to verify state updates
 
 ## Troubleshooting
 
@@ -253,32 +286,43 @@ git push origin v1.2.0
 
 **Authentication Errors:**
 ```
-Error: Could not retrieve auth token
+ServiceException: 401 Anonymous caller does not have storage.objects.create access
 ```
-- Check `WORKLOAD_IDENTITY_PROVIDER` and `SERVICE_ACCOUNT` secrets
-- Verify repository name matches Workload Identity condition
-- Wait 5 minutes for IAM propagation
+- **Root cause**: Missing `google-github-actions/setup-gcloud@v2` step
+- **Solution**: The auth action only sets environment variables, gcloud SDK needed for gsutil
+- **Fixed**: Added gcloud SDK setup step after authentication in workflow
+
+**GCS Bucket Name Errors:**
+```
+BadRequestException: 400 Invalid bucket name: '-pl-assets'
+```  
+- **Root cause**: Job outputs empty, using `needs.pre-checks.outputs.project-id` 
+- **Solution**: Use environment variables directly: `${{ env.PROJECT_ID_DEV }}`
+- **Fixed**: Replaced all job output dependencies with direct env vars
+
+**Pipeline Compilation Path Errors:**
+```
+cp: cannot stat 'pipelines/training.json': No such file or directory
+```
+- **Root cause**: Compiled files are in `pipelines/src/` not `pipelines/`
+- **Solution**: Update copy paths to `cp pipelines/src/training.json`
+- **Fixed**: Corrected all pipeline asset copy paths in workflow
+
+**Component Compilation Errors:**
+```
+make: *** No rule to make target 'compile-all-components'
+```
+- **Root cause**: Missing Makefile target, but components installed via requirements.txt
+- **Solution**: Remove redundant compile step, use pip install only
+- **Fixed**: Removed unnecessary component compilation, use requirements.txt install
 
 **Terraform Backend Errors:**
 ```  
 Error: Failed to configure backend "gcs"
 ```
 - Ensure GCS state bucket exists: `gsutil ls gs://PROJECT_ID-tfstate`
-- Check service account has Storage Admin permissions
-
-**Permission Errors:**
-```
-Error: googleapi: Error 403: Permission denied
-```
-- Review GitHub Actions service account IAM roles
-- Check if APIs are enabled in target project
-
-**Pipeline Compilation Errors:**
-```
-ModuleNotFoundError: No module named 'kfp'
-```
-- Check Python dependencies in `pipelines/requirements.txt`
-- Verify Python version (should be 3.11)
+- Check service account has Storage Admin permissions on bucket
+- **Current**: `gsutil iam ch serviceAccount:github-actions@syntio-ai-ops.iam.gserviceaccount.com:roles/storage.objectAdmin gs://syntio-ai-ops-tfstate`
 
 ### Debug Commands
 
