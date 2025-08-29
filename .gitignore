@@ -184,6 +184,11 @@ env.sh
 **/*pipeline.json
 **/venv37/
 
+# Compiled Kubeflow pipelines (should not be committed)
+*.yaml
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
+
 # Pathfinder/development documentation
 PATHFINDER_EXECUTION_SUMMARY.md
 PATHFINDER_MODERNIZATION_SUMMARY.md
