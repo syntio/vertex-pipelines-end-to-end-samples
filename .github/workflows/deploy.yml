@@ -4,6 +4,15 @@ name: Deploy Infrastructure and Pipelines
 "on":
   push:
     branches: [develop, ivanv/github-actions-deployment]
+    paths:
+      - 'terraform/**'
+      - 'pipelines/**'
+      - '.github/workflows/**'
+      - 'components/**'
+      - 'Makefile'
+      - '!docs/**'
+      - '!README.md'
+      - '!*.md'
   release:
     types: [published]
   workflow_dispatch:
