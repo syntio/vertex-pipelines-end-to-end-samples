@@ -25,9 +25,26 @@ To prevent conflicts when multiple repositories deploy to the same project:
 - **Benefits**: Unique per repository, conflict-free, under GCP 32-character limit
 
 ### Deployment Triggers
-- **Push to develop** → Auto-deploy to dev environment
+- **Push to develop** → Auto-deploy to dev environment (only for relevant file changes)
 - **Release/Tag** → Manual-approve deploy to prod environment  
 - **Workflow dispatch** → Manual deploy to dev environment only (production requires release/tag)
+
+### Smart Path-Based Triggers
+The workflow only runs when files that affect deployment are changed:
+
+**✅ Will trigger deployment:**
+- `terraform/**` - Infrastructure changes
+- `pipelines/**` - Pipeline code changes  
+- `.github/workflows/**` - Workflow changes
+- `components/**` - Custom component changes
+- `Makefile` - Build script changes
+
+**❌ Will NOT trigger deployment:**
+- `docs/**` - Documentation changes
+- `README.md` - Readme changes  
+- `*.md` - Any markdown files
+
+This prevents unnecessary deployments and resource usage when only documentation is updated.
 
 ## Setup Instructions
 
