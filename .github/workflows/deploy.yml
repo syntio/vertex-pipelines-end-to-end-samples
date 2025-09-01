@@ -18,12 +18,13 @@ name: Deploy Infrastructure and Pipelines
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to (dev only for manual testing)'
+        description: 'Environment to deploy to (dev/test for manual testing)'
         required: true
         default: 'dev'
         type: choice
         options:
           - dev
+          - test
 
 permissions:
   contents: read
@@ -63,6 +64,8 @@ jobs:
             echo "environment=$ENV_INPUT" >> $GITHUB_OUTPUT
             if [[ "$ENV_INPUT" == "prod" ]]; then
               echo "project-id=${{ env.PROJECT_ID_PROD }}" >> $GITHUB_OUTPUT
+            elif [[ "$ENV_INPUT" == "test" ]]; then
+              echo "project-id=${{ env.PROJECT_ID_TEST }}" >> $GITHUB_OUTPUT
             else
               echo "project-id=${{ env.PROJECT_ID_DEV }}" >> $GITHUB_OUTPUT
             fi
@@ -151,6 +154,85 @@ jobs:
           # Upload to GCS
           gsutil -m cp -r pipeline-assets/* gs://${{ env.PROJECT_ID_DEV }}-pl-assets/
 
+  # Deploy to test environment
+  deploy-test:
+    name: Deploy to Test
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    if: needs.pre-checks.outputs.environment == 'test'
+    # environment: test  # Commented out - requires admin permissions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GHA_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Deploy Infrastructure
+        run: |
+          echo "DEBUG: Using PROJECT_ID_TEST: ${{ env.PROJECT_ID_TEST }}"
+          echo "DEBUG: About to use bucket: ${{ env.PROJECT_ID_TEST }}-tfstate"
+          cd terraform/envs/test
+          terraform init -input=false \
+            -backend-config="bucket=${{ env.PROJECT_ID_TEST }}-tfstate"
+          terraform plan -input=false \
+            -var-file="test.tfvars" \
+            -var="project_id=${{ env.PROJECT_ID_TEST }}" \
+            -var="region=${{ env.REGION }}"
+          terraform apply -auto-approve -input=false \
+            -var-file="test.tfvars" \
+            -var="project_id=${{ env.PROJECT_ID_TEST }}" \
+            -var="region=${{ env.REGION }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pipeline dependencies
+        working-directory: pipelines
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile pipelines
+        run: |
+          for template in tensorflow xgboost; do
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=training
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=prediction
+          done
+
+      - name: Upload pipeline assets to GCS
+        run: |
+          # Create directory structure for assets
+          mkdir -p pipeline-assets/training/assets
+          mkdir -p pipeline-assets/prediction/assets
+
+          # Copy compiled pipelines
+          cp pipelines/training.json pipeline-assets/training/
+          cp pipelines/prediction.json pipeline-assets/prediction/
+
+          # Copy training assets if they exist
+          if [ -d "pipelines/src/pipelines/tensorflow/training/assets" ]; then
+            cp -r pipelines/src/pipelines/tensorflow/training/assets/* pipeline-assets/training/assets/
+          fi
+          if [ -d "pipelines/src/pipelines/xgboost/training/assets" ]; then
+            cp -r pipelines/src/pipelines/xgboost/training/assets/* pipeline-assets/training/assets/
+          fi
+
+          # Upload to GCS
+          gsutil -m cp -r pipeline-assets/* gs://${{ env.PROJECT_ID_TEST }}-pl-assets/
 
   # Deploy to production environment (requires manual approval)
   deploy-prod:
