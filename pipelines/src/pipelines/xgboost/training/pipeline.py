@@ -17,7 +17,7 @@ import pathlib
 
 from kfp import compiler, dsl
 from pipelines import generate_query
-from bigquery_components import bq_query_to_table, extract_bq_to_dataset
+from bigquery_components import bq_query_to_table, extract_bq_to_dataset, run_scan
 from vertex_components import (
     lookup_model,
     custom_train_job,
@@ -142,19 +142,32 @@ def xgboost_pipeline(
         query=ingest_query, table_id=ingested_table, **kwargs
     ).set_display_name("Ingest data")
 
+    try:
+        scan = (
+            run_scan(
+                project_id=project_id,
+                location=project_location,
+                bq_table=ingested_table,
+            )
+            .after(ingest)
+            .set_display_name("Run DQ scan")
+        )
+    except Exception as e:
+        print(e)
+
     split_train_data = (
         bq_query_to_table(query=split_train_query, table_id=train_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split train data")
     )
     split_valid_data = (
         bq_query_to_table(query=split_valid_query, table_id=valid_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split validation data")
     )
     split_test_data = (
         bq_query_to_table(query=split_test_query, table_id=test_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split test data")
     )
     data_cleaning = (

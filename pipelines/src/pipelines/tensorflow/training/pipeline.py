@@ -17,7 +17,7 @@ import pathlib
 
 from kfp import compiler, dsl
 from pipelines import generate_query
-from bigquery_components import bq_query_to_table, extract_bq_to_dataset
+from bigquery_components import bq_query_to_table, extract_bq_to_dataset, run_scan
 from vertex_components import (
     lookup_model,
     custom_train_job,
@@ -143,6 +143,19 @@ def tensorflow_pipeline(
     ingest = bq_query_to_table(
         query=ingest_query, table_id=ingested_table, **kwargs
     ).set_display_name("Ingest data")
+
+    try:
+        scan = (
+            run_scan(
+                project_id=project_id,
+                location=project_location,
+                bq_table=ingested_table,
+            )
+            .after(ingest)
+            .set_display_name("Run DQ scan")
+        )
+    except Exception as e:
+        print(e)
 
     # exporting data to GCS from BQ
     split_train_data = (

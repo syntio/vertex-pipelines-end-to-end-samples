@@ -12,7 +12,7 @@ def run_scan(
     location: str = None,
     bq_table: str = None,
     dq_scan_id: str = None,
-) -> None:
+):
     from google.cloud import dataplex_v1, bigquery
 
     dataplex_client = dataplex_v1.DataScanServiceClient()
@@ -110,3 +110,4 @@ def run_scan(
 
     response = dataplex_client.run_data_scan(request=request)
     print(f"Pokrenut DQ scan job: {response}")
+    return response
