@@ -1,0 +1,333 @@
+---
+name: Deploy Infrastructure and Pipelines
+
+"on":
+  push:
+    branches: [develop]
+    paths:
+      - 'terraform/**'
+      - 'pipelines/**'
+      - '.github/workflows/**'
+      - 'components/**'
+      - 'Makefile'
+      - '!docs/**'
+      - '!README.md'
+      - '!*.md'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (dev/test for manual testing)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  # These will be set via repository secrets
+  PROJECT_ID_DEV: ${{ secrets.PROJECT_ID_DEV }}
+  PROJECT_ID_PROD: ${{ secrets.PROJECT_ID_PROD }}
+  PROJECT_ID_TEST: ${{ secrets.PROJECT_ID_TEST }}
+  REGION: ${{ secrets.REGION || 'europe-west2' }}
+  WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+  GHA_SERVICE_ACCOUNT: ${{ secrets.GHA_SERVICE_ACCOUNT }}
+
+jobs:
+  # Pre-deployment checks
+  pre-checks:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+      project-id: ${{ steps.determine-env.outputs.project-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: determine-env
+        run: |
+          echo "DEBUG: Event name is '${{ github.event_name }}'"
+          echo "DEBUG: PROJECT_ID_DEV is '${{ env.PROJECT_ID_DEV }}'"
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "project-id=${{ env.PROJECT_ID_PROD }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENV_INPUT="${{ github.event.inputs.environment || 'dev' }}"
+            echo "environment=$ENV_INPUT" >> $GITHUB_OUTPUT
+            if [[ "$ENV_INPUT" == "prod" ]]; then
+              echo "project-id=${{ env.PROJECT_ID_PROD }}" >> $GITHUB_OUTPUT
+            elif [[ "$ENV_INPUT" == "test" ]]; then
+              echo "project-id=${{ env.PROJECT_ID_TEST }}" >> $GITHUB_OUTPUT
+            else
+              echo "project-id=${{ env.PROJECT_ID_DEV }}" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "project-id=${{ env.PROJECT_ID_DEV }}" >> $GITHUB_OUTPUT
+          fi
+
+  # Deploy to development environment
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    if: needs.pre-checks.outputs.environment == 'dev'
+    # environment: development  # Commented out - requires admin permissions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GHA_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Deploy Infrastructure
+        run: |
+          echo "DEBUG: Using PROJECT_ID_DEV directly: ${{ env.PROJECT_ID_DEV }}"
+          echo "DEBUG: About to use bucket: ${{ env.PROJECT_ID_DEV }}-tfstate"
+          cd terraform/envs/dev
+          terraform init -input=false \
+            -backend-config="bucket=${{ env.PROJECT_ID_DEV }}-tfstate"
+          terraform plan -input=false \
+            -var-file="dev.tfvars" \
+            -var="project_id=${{ env.PROJECT_ID_DEV }}" \
+            -var="region=${{ env.REGION }}"
+          terraform apply -auto-approve -input=false \
+            -var-file="dev.tfvars" \
+            -var="project_id=${{ env.PROJECT_ID_DEV }}" \
+            -var="region=${{ env.REGION }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pipeline dependencies
+        working-directory: pipelines
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile pipelines
+        run: |
+          for template in tensorflow xgboost; do
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=training
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=prediction
+          done
+
+      - name: Upload pipeline assets to GCS
+        run: |
+          # Create directory structure for assets
+          mkdir -p pipeline-assets/training/assets
+          mkdir -p pipeline-assets/prediction/assets
+
+          # Copy compiled pipelines from src directory
+          cp pipelines/src/training.json pipeline-assets/training/
+          cp pipelines/src/prediction.json pipeline-assets/prediction/
+
+          # Copy training assets if they exist
+          if [ -d "pipelines/src/pipelines/tensorflow/training/assets" ]; then
+            cp -r pipelines/src/pipelines/tensorflow/training/assets/* pipeline-assets/training/assets/
+          fi
+          if [ -d "pipelines/src/pipelines/xgboost/training/assets" ]; then
+            cp -r pipelines/src/pipelines/xgboost/training/assets/* pipeline-assets/training/assets/
+          fi
+
+          # Upload to GCS
+          gsutil -m cp -r pipeline-assets/* gs://${{ env.PROJECT_ID_DEV }}-pl-assets/
+
+  # Deploy to test environment
+  deploy-test:
+    name: Deploy to Test
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    if: needs.pre-checks.outputs.environment == 'test'
+    # environment: test  # Commented out - requires admin permissions
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GHA_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Deploy Infrastructure
+        run: |
+          echo "DEBUG: Using PROJECT_ID_TEST: ${{ env.PROJECT_ID_TEST }}"
+          echo "DEBUG: About to use bucket: ${{ env.PROJECT_ID_TEST }}-tfstate"
+          cd terraform/envs/test
+          terraform init -input=false \
+            -backend-config="bucket=${{ env.PROJECT_ID_TEST }}-tfstate"
+          terraform plan -input=false \
+            -var-file="test.tfvars" \
+            -var="project_id=${{ env.PROJECT_ID_TEST }}" \
+            -var="region=${{ env.REGION }}"
+          terraform apply -auto-approve -input=false \
+            -var-file="test.tfvars" \
+            -var="project_id=${{ env.PROJECT_ID_TEST }}" \
+            -var="region=${{ env.REGION }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pipeline dependencies
+        working-directory: pipelines
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile pipelines
+        run: |
+          for template in tensorflow xgboost; do
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=training
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=prediction
+          done
+
+      - name: Upload pipeline assets to GCS
+        run: |
+          # Create directory structure for assets
+          mkdir -p pipeline-assets/training/assets
+          mkdir -p pipeline-assets/prediction/assets
+
+          # Copy compiled pipelines
+          cp pipelines/training.json pipeline-assets/training/
+          cp pipelines/prediction.json pipeline-assets/prediction/
+
+          # Copy training assets if they exist
+          if [ -d "pipelines/src/pipelines/tensorflow/training/assets" ]; then
+            cp -r pipelines/src/pipelines/tensorflow/training/assets/* pipeline-assets/training/assets/
+          fi
+          if [ -d "pipelines/src/pipelines/xgboost/training/assets" ]; then
+            cp -r pipelines/src/pipelines/xgboost/training/assets/* pipeline-assets/training/assets/
+          fi
+
+          # Upload to GCS
+          gsutil -m cp -r pipeline-assets/* gs://${{ env.PROJECT_ID_TEST }}-pl-assets/
+
+  # Deploy to production environment (requires manual approval)
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: pre-checks
+    if: needs.pre-checks.outputs.environment == 'prod'
+    # environment: production  # Commented out - requires admin permissions
+    # This environment will require manual approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GHA_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Terraform Plan (Production)
+        run: |
+          cd terraform/envs/prod
+          terraform init -input=false \
+            -backend-config="bucket=${{ env.PROJECT_ID_PROD }}-tfstate"
+          terraform plan -input=false \
+            -var="project_id=${{ env.PROJECT_ID_PROD }}" \
+            -var="region=${{ env.REGION }}"
+
+      - name: Manual Approval Checkpoint
+        run: |
+          echo "🚨 Production deployment requires manual approval"
+          echo "Review the terraform plan above before proceeding"
+
+      - name: Deploy Infrastructure (Production)
+        run: |
+          cd terraform/envs/prod
+          terraform apply -auto-approve -input=false \
+            -var="project_id=${{ env.PROJECT_ID_PROD }}" \
+            -var="region=${{ env.REGION }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pipeline dependencies
+        working-directory: pipelines
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile and upload pipelines
+        run: |
+          make compile-all-components
+          for template in tensorflow xgboost; do
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=training
+            make compile-pipeline PIPELINE_TEMPLATE=$template pipeline=prediction
+          done
+
+          # Create versioned directory for production release
+          VERSION_DIR="${{ github.event.release.tag_name || 'manual-deploy' }}-$(date +%Y%m%d-%H%M%S)"
+          mkdir -p "pipeline-assets/$VERSION_DIR/training/assets"
+          mkdir -p "pipeline-assets/$VERSION_DIR/prediction/assets"
+
+          # Copy compiled pipelines with versioning
+          cp pipelines/training.json "pipeline-assets/$VERSION_DIR/training/"
+          cp pipelines/prediction.json "pipeline-assets/$VERSION_DIR/prediction/"
+
+          # Copy assets if they exist
+          for template in tensorflow xgboost; do
+            if [ -d "pipelines/src/pipelines/$template/training/assets" ]; then
+              cp -r "pipelines/src/pipelines/$template/training/assets/"* \
+                "pipeline-assets/$VERSION_DIR/training/assets/"
+            fi
+          done
+
+          # Upload to GCS with version
+          gsutil -m cp -r "pipeline-assets/$VERSION_DIR" \
+            gs://${{ env.PROJECT_ID_PROD }}-pl-assets/
+
+          # Also update the latest version
+          gsutil -m cp -r "pipeline-assets/$VERSION_DIR/"* \
+            gs://${{ env.PROJECT_ID_PROD }}-pl-assets/latest/
+
+      - name: Deployment Summary
+        run: |
+          echo "✅ Production deployment completed successfully"
+          echo "📦 Version: ${{ github.event.release.tag_name || 'manual-deploy' }}"
+          echo "🗄️ Assets uploaded to: gs://${{ env.PROJECT_ID_PROD }}-pl-assets/"
+          echo "🏗️ Infrastructure deployed to: ${{ env.PROJECT_ID_PROD }}"

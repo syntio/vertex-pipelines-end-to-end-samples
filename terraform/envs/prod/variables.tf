@@ -37,3 +37,8 @@ variable "cloud_schedulers_config" {
   }))
   default = {}
 }
+
+variable "name_prefix" {
+  description = "Prefix for resource names to distinguish different ML workloads"
+  type        = string
+}

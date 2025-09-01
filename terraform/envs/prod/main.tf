@@ -16,17 +16,17 @@
 
 
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 0.13"
   required_providers {
 
     google = {
       source  = "hashicorp/google"
-      version = "~> 6.0"
+      version = "~> 4.56.0"
     }
 
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 6.0"
+      version = "~> 4.56.0"
     }
 
   }
@@ -37,9 +37,11 @@ terraform {
 
 # Core Vertex Pipelines infrastructure
 module "vertex_deployment" {
-  source     = "../../modules/vertex_deployment"
-  project_id = var.project_id
-  region     = var.region
+  source      = "../../modules/vertex_deployment"
+  project_id  = var.project_id
+  region      = var.region
+  environment = "prod"
+  name_prefix = var.name_prefix
 }
 
 # Cloud Scheduler jobs (for triggering pipelines)

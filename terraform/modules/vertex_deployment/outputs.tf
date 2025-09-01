@@ -49,3 +49,8 @@ output "pipeline_config_secret_id" {
 output "model_config_secret_id" {
   value = google_secret_manager_secret.model_config.secret_id
 }
+
+output "gcp_services" {
+  value       = google_project_service.gcp_services
+  description = "GCP services enabled for the project"
+}

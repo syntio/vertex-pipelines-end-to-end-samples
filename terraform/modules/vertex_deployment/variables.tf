@@ -64,13 +64,13 @@ variable "cloudfunction_region" {
 variable "pubsub_topic_name" {
   description = "Name of the Pub/Sub topic to create for triggering pipelines."
   type        = string
-  default     = "vertex-pipeline-trigger"
+  default     = null # Will be constructed dynamically with name_prefix and environment
 }
 
 variable "cloudfunction_name" {
   description = "Name of the Cloud Function"
   type        = string
-  default     = "vertex-pipelines-trigger"
+  default     = null # Will be constructed dynamically with name_prefix and environment
 }
 
 variable "cloudfunction_description" {
@@ -135,4 +135,24 @@ variable "artifact_registry_repository_id" {
   description = "ID of the Artifact Registry repository for container images."
   type        = string
   default     = "ml-pipeline-containers"
+}
+
+variable "environment" {
+  description = "Environment name (dev or prod) for configuration differentiation."
+  type        = string
+  default     = "dev"
+}
+
+variable "name_prefix" {
+  description = <<-EOT
+    Prefix for resource names (e.g., ml_ops_turbo). 
+    
+    NOTE: This distinguishes different ML workloads within the same project.
+    In a multi-project setup, this would distinguish different workloads.
+    
+    Resource naming pattern: {project_id}-{name_prefix}-{environment}-{resource_type}
+    Example: my-project-ml_ops_turbo-dev-pl-assets
+  EOT
+  type        = string
+  # No default - must be explicitly provided
 }
