@@ -130,7 +130,7 @@ resource "google_secret_manager_secret" "pipeline_config" {
   project   = var.project_id
 
   replication {
-    automatic = true
+    auto {}
   }
 
   depends_on = [google_project_service.gcp_services]
@@ -151,7 +151,7 @@ resource "google_secret_manager_secret" "model_config" {
   project   = var.project_id
 
   replication {
-    automatic = true
+    auto {}
   }
 
   depends_on = [google_project_service.gcp_services]
