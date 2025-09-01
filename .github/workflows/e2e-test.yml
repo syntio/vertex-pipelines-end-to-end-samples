@@ -2,8 +2,7 @@
 name: Trigger Cloud build E2E Pipeline Tests
 
 "on":
-  push:
-    branches: [matea/cloud-build-to-github-actions]
+  workflow_dispatch:
 
 permissions:
   contents: read
