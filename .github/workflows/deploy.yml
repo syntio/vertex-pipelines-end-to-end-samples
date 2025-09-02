@@ -130,13 +130,13 @@ jobs:
         run: |
           # Configure Docker for Artifact Registry
           gcloud auth configure-docker europe-west2-docker.pkg.dev
-          
+
           # Create Dockerfile
           cat > Dockerfile << 'EOF'
           FROM python:3.11
           RUN pip install google-cloud-aiplatform google-cloud-bigquery google-cloud-dataplex google-cloud-pipeline-components
           EOF
-          
+
           # Build and push the image
           docker build -t europe-west2-docker.pkg.dev/${{ env.PROJECT_ID_DEV }}/ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest .
           docker push europe-west2-docker.pkg.dev/${{ env.PROJECT_ID_DEV }}/ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest
