@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import pathlib
 
@@ -147,7 +148,8 @@ def xgboost_pipeline(
             run_scan(
                 project_id=project_id,
                 location=project_location,
-                bq_table=ingested_table,
+                bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
+                dq_scan_id=f"taxi-trips-scan-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
             )
             .after(ingest)
             .set_display_name("Run DQ scan")

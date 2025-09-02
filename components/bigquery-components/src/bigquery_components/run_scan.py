@@ -1,10 +1,10 @@
-from kfp import dsl
+from kfp.dsl import component
 
 
-@dsl.component(
+@component(
     base_image=(
-        "europe-west2-docker.pkg.dev/PROJECT_ID/"
-        "ml-pipeline-containers/ml-pipeline-base:latest"
+        "europe-west2-docker.pkg.dev/syntio-ai-ops/"
+        "ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest"
     ),
 )
 def run_scan(
@@ -12,8 +12,9 @@ def run_scan(
     location: str = None,
     bq_table: str = None,
     dq_scan_id: str = None,
-):
+) -> None:
     from google.cloud import dataplex_v1, bigquery
+    import time
 
     dataplex_client = dataplex_v1.DataScanServiceClient()
     bq_client = bigquery.Client(project=project_id)
@@ -21,7 +22,10 @@ def run_scan(
     parent = f"projects/{project_id}/locations/{location}"
     dq_scan_full_name = f"{parent}/dataScans/{dq_scan_id}"
 
-    project, dataset, table = bq_table.split(".")
+    try:
+        project, dataset, table = bq_table.split(".")
+    except ValueError:
+        raise ValueError(f"Invalid bq_table format:'{bq_table}'.")
     resource_uri = (
         f"//bigquery.googleapis.com/projects/{project}"
         f"/datasets/{dataset}/tables/{table}"
@@ -110,4 +114,21 @@ def run_scan(
 
     response = dataplex_client.run_data_scan(request=request)
     print(f"Pokrenut DQ scan job: {response}")
-    return response
+    job_name = response.job.name
+    while True:
+        job = dataplex_client.get_data_scan_job(name=job_name)
+        state = job.state
+
+        print(f"Provjera statusa DQ joba: {state.name}")
+
+        if state == dataplex_v1.DataScanJob.State.SUCCEEDED:
+            print("DQ job završio uspješno ✅")
+            return
+        elif state in (
+            dataplex_v1.DataScanJob.State.FAILED,
+            dataplex_v1.DataScanJob.State.CANCELLED,
+        ):
+            raise RuntimeError(f"DQ job nije uspio ❌ Status: {job.state.name}")
+
+        # Job still running, wait before next poll
+        time.sleep(15)

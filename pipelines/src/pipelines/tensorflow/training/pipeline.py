@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import pathlib
 
@@ -144,33 +145,31 @@ def tensorflow_pipeline(
         query=ingest_query, table_id=ingested_table, **kwargs
     ).set_display_name("Ingest data")
 
-    try:
-        scan = (
-            run_scan(
-                project_id=project_id,
-                location=project_location,
-                bq_table=ingested_table,
-            )
-            .after(ingest)
-            .set_display_name("Run DQ scan")
+    scan = (
+        run_scan(
+            project_id=project_id,
+            location=project_location,
+            bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
+            dq_scan_id=f"taxi-trips-scan-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
         )
-    except Exception as e:
-        print(e)
+        .after(ingest)
+        .set_display_name("Run DQ scan")
+    )
 
     # exporting data to GCS from BQ
     split_train_data = (
         bq_query_to_table(query=split_train_query, table_id=train_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split train data")
     )
     split_valid_data = (
         bq_query_to_table(query=split_valid_query, table_id=valid_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split validation data")
     )
     split_test_data = (
         bq_query_to_table(query=split_test_query, table_id=test_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split test data")
     )
     data_cleaning = (
