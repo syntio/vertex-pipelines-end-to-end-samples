@@ -1,0 +1,46 @@
+---
+name: Trigger Cloud build E2E Pipeline Tests
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  trigger-cloud-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        pipeline_template: [tensorflow, xgboost]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GHA_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Trigger Cloud Build
+        run: |
+            gcloud builds submit \
+            --project="${{ secrets.PROJECT_ID }}" \
+            --config=cloudbuild/e2e-test.yaml \
+            --substitutions="\
+            _PIPELINE_TEMPLATE=${{ matrix.pipeline_template }},\
+            _PIPELINE_PUBLISH_GCS_PATH=${{ secrets.PIPELINE_PUBLISH_GCS_PATH }}${{ matrix.pipeline_template }},\
+            _TEST_VERTEX_LOCATION=${{ secrets.DATASET_REGION }},\
+            _TEST_VERTEX_PROJECT_ID=${{ secrets.PROJECT_ID }},\
+            _TEST_VERTEX_SA_EMAIL=${{ secrets.VERTEX_PIPELINE_SA_EMAIL }},\
+            _TEST_VERTEX_CMEK_IDENTIFIER=,\
+            _TEST_VERTEX_NETWORK=,\
+            _TEST_VERTEX_PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }},\
+            COMMIT_SHA=${{ github.sha }}"

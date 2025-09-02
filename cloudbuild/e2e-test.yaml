@@ -25,12 +25,12 @@ steps:
         mkdir -p ${COMMIT_SHA}/prediction/assets && \
         cp -r pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/training/assets ${COMMIT_SHA}/training/ && \
         cp -r pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/prediction/assets ${COMMIT_SHA}/prediction/ && \
-        gsutil cp -r ${COMMIT_SHA} ${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
+        gsutil cp -r ${COMMIT_SHA} gs://${_PIPELINE_PUBLISH_GCS_PATH}/
 
   # Install Python deps
   # Run end-to-end (E2E) pipeline tests on both pipelines
   - name: python:3.11
-    entrypoint: /bin/sh
+    entrypoint: bash
     args:
       - -c
       - |
@@ -45,7 +45,7 @@ steps:
       - VERTEX_NETWORK=${_TEST_VERTEX_NETWORK}
       - PIPELINE_TEMPLATE=${_PIPELINE_TEMPLATE}
       - VERTEX_PIPELINE_ROOT=${_TEST_VERTEX_PIPELINE_ROOT}
-      - PIPELINE_FILES_GCS_PATH=${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
+      - PIPELINE_FILES_GCS_PATH=gs://${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
 
 options:
   logging: CLOUD_LOGGING_ONLY
