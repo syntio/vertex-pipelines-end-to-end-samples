@@ -47,7 +47,7 @@ SELECT
                END AS FLOAT64) AS trip_seconds,
     payment_type,
     company,
-    (fare + tips + tolls + extras) AS `{{ target_column }}`,
+    (fare + tips + tolls + extras) AS `{{ target_column }}`
 FROM filtered_data as t, mean_time as m
 WHERE
     trip_miles > 0 AND fare > 0 AND fare < 1500
