@@ -18,12 +18,13 @@ default_language_version:
 
 repos:
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.0.9
+    rev: v0.1.23
     hooks:
       - id: terraform-fmt
+      - id: terraform-validate
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v1.2.3
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files
       - id: check-merge-conflict
@@ -32,10 +33,6 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
 
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 1.11.0
-    hooks:
-      - id: git-dirty
 
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.26.3
@@ -44,11 +41,11 @@ repos:
         args: [--format, parsable, --strict]
 
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 24.8.0
     hooks:
       - id: black
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 3.7.9
+    rev: 7.1.1
     hooks:
       - id: flake8
