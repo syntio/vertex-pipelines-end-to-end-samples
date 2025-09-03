@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
  -->
  # Vertex Pipelines End-to-end Samples
- [![Pull Request Checks](https://github.com/syntio/vertex-pipelines-end-to-end-samples/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/syntio/vertex-pipelines-end-to-end-samples/actions/workflows/pr-checks.yml)
+ [![Pull Request Checks](https://github.com/YOUR_GITHUB_ORG/YOUR_REPO_NAME/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/YOUR_GITHUB_ORG/YOUR_REPO_NAME/actions/workflows/pr-checks.yml)
 
 ## Introduction
 

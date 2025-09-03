@@ -295,7 +295,7 @@ git push origin v1.2.0
 ```
 
 ### Monitor Deployment
-- **GitHub Actions**: https://github.com/syntio/vertex-pipelines-end-to-end-samples/actions
+- **GitHub Actions**: https://github.com/YOUR_GITHUB_ORG/YOUR_REPO_NAME/actions
 - **GCP Console**: Verify infrastructure in Cloud Console
 - **Storage**: `gsutil ls -r gs://${PROJECT_ID}-pl-assets/` to see deployed assets  
 - **Terraform**: `gsutil ls gs://${PROJECT_ID}-tfstate/` to verify state updates
