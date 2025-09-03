@@ -24,9 +24,9 @@ from vertex_components import lookup_model, model_batch_predict
 
 @dsl.pipeline(name="xgboost-prediction-pipeline")
 def xgboost_pipeline(
-    project_id: str = os.environ.get("VERTEX_PROJECT_ID"),
+    project_id: str = os.environ.get("PROJECT_ID"),
     project_location: str = os.environ.get("VERTEX_LOCATION"),
-    ingestion_project_id: str = os.environ.get("VERTEX_PROJECT_ID"),
+    ingestion_project_id: str = os.environ.get("PROJECT_ID"),
     model_name: str = "simple_xgboost",
     dataset_id: str = "preprocessing",
     dataset_location: str = os.environ.get("VERTEX_LOCATION"),
