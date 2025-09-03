@@ -5,8 +5,8 @@ project_id = "YOUR_PROJECT_ID"
 region     = "europe-west2"
 
 # GitHub Actions Authentication (for CI/CD deployment)
-github_repository_owner = "syntio"
-github_repository_name  = "vertex-pipelines-end-to-end-samples"
+github_repository_owner = "YOUR_GITHUB_ORG"
+github_repository_name  = "YOUR_REPO_NAME"
 
 # Resource Naming
 name_prefix = "ml-ops-turbo"
