@@ -171,6 +171,10 @@ pytest.ini
 *.tfstate.*
 .terraform.lock.hcl
 
+# Terraform variable files (keep only .example files)
+*.tfvars
+!*.tfvars.example
+
 # Cloud Function zip
 terraform/**/*.zip
 
