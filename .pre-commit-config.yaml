@@ -32,10 +32,11 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
 
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 1.11.0
-    hooks:
-      - id: git-dirty
+  # Temporarily disabled due to Windows/Linux line ending conflicts
+  # - repo: https://github.com/jumanjihouse/pre-commit-hooks
+  #   rev: 1.11.0
+  #   hooks:
+  #     - id: git-dirty
 
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.26.3
