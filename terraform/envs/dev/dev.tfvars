@@ -1,7 +1,7 @@
 # Vertex Pipelines Development Environment Configuration
 
 # GCP Configuration
-project_id = "syntio-ai-ops"
+project_id = "syntio-ai-ops-dev"
 region     = "europe-west2"
 
 # GitHub Actions Authentication (for CI/CD deployment)
