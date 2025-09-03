@@ -22,7 +22,7 @@ from kfp import compiler
 
 from pipelines.trigger.main import trigger_pipeline_from_payload
 
-project_id = os.environ["VERTEX_PROJECT_ID"]
+project_id = os.environ["PROJECT_ID"]
 project_location = os.environ["VERTEX_LOCATION"]
 
 

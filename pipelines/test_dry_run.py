@@ -13,7 +13,7 @@ def test_environment_setup() -> bool:
     print("🔍 Testing environment setup...")
 
     required_vars = [
-        "VERTEX_PROJECT_ID",
+        "PROJECT_ID",
         "VERTEX_LOCATION",
         "VERTEX_PIPELINE_ROOT",
         "VERTEX_SA_EMAIL",
