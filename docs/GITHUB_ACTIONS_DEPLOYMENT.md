@@ -81,12 +81,12 @@ Add these secrets to your GitHub repository (`Settings` → `Secrets and variabl
 ```bash
 # Authentication (get exact values from terraform output)
 WORKLOAD_IDENTITY_PROVIDER=projects/304309528954/locations/global/workloadIdentityPools/gh-vpetes-4d532027c607/providers/github-provider
-GHA_SERVICE_ACCOUNT=github-actions-deploy@syntio-ai-ops.iam.gserviceaccount.com
+GHA_SERVICE_ACCOUNT=github-actions-deploy@${PROJECT_ID}.iam.gserviceaccount.com
 
 # Project Configuration (single project architecture)
-PROJECT_ID_DEV=syntio-ai-ops
-PROJECT_ID_TEST=syntio-ai-ops
-PROJECT_ID_PROD=syntio-ai-ops
+PROJECT_ID_DEV=${PROJECT_ID}
+PROJECT_ID_TEST=${PROJECT_ID}
+PROJECT_ID_PROD=${PROJECT_ID}
 REGION=europe-west2
 ```
 
@@ -102,7 +102,7 @@ terraform output
 **Actual dev.tfvars:**
 ```hcl
 # Copy from dev.tfvars.example and update with your values
-project_id = "syntio-ai-ops"
+project_id = "${PROJECT_ID}"
 region     = "europe-west2"
 github_repository_owner = "syntio"
 github_repository_name  = "vertex-pipelines-end-to-end-samples"
@@ -147,17 +147,17 @@ Create GitHub environments (`Settings` → `Environments`):
 Single project architecture uses one state bucket:
 
 ```bash
-# Create state bucket (already exists for syntio-ai-ops)
-gsutil mb gs://syntio-ai-ops-tfstate
+# Create state bucket (already exists for ${PROJECT_ID})
+gsutil mb gs://${PROJECT_ID}-tfstate
 
 # Enable versioning for state protection
-gsutil versioning set on gs://syntio-ai-ops-tfstate
+gsutil versioning set on gs://${PROJECT_ID}-tfstate
 
 # Verify bucket exists
-gsutil ls gs://syntio-ai-ops-tfstate/
+gsutil ls gs://${PROJECT_ID}-tfstate/
 ```
 
-**For new projects**: Replace `syntio-ai-ops` with your project ID in the bucket name.
+**For new projects**: Replace `${PROJECT_ID}` with your project ID in the bucket name.
 
 ## Workflow Details
 
@@ -250,9 +250,9 @@ If issues arise with GitHub Actions:
 
 **Deployed Assets (verified):**
 ```bash
-gs://syntio-ai-ops-tfstate/default.tfstate     # Terraform state
-gs://syntio-ai-ops-pl-assets/training/         # Training pipeline + assets
-gs://syntio-ai-ops-pl-assets/prediction/       # Prediction pipeline
+gs://${PROJECT_ID}-tfstate/default.tfstate     # Terraform state
+gs://${PROJECT_ID}-pl-assets/training/         # Training pipeline + assets
+gs://${PROJECT_ID}-pl-assets/prediction/       # Prediction pipeline
 ```
 
 **Key Lessons Learned:**
@@ -294,8 +294,8 @@ git push origin v1.2.0
 ### Monitor Deployment
 - **GitHub Actions**: https://github.com/syntio/vertex-pipelines-end-to-end-samples/actions
 - **GCP Console**: Verify infrastructure in Cloud Console
-- **Storage**: `gsutil ls -r gs://syntio-ai-ops-pl-assets/` to see deployed assets  
-- **Terraform**: `gsutil ls gs://syntio-ai-ops-tfstate/` to verify state updates
+- **Storage**: `gsutil ls -r gs://${PROJECT_ID}-pl-assets/` to see deployed assets  
+- **Terraform**: `gsutil ls gs://${PROJECT_ID}-tfstate/` to verify state updates
 
 ## Troubleshooting
 
@@ -339,23 +339,23 @@ Error: Failed to configure backend "gcs"
 ```
 - Ensure GCS state bucket exists: `gsutil ls gs://PROJECT_ID-tfstate`
 - Check service account has Storage Admin permissions on bucket
-- **Current**: `gsutil iam ch serviceAccount:github-actions@syntio-ai-ops.iam.gserviceaccount.com:roles/storage.objectAdmin gs://syntio-ai-ops-tfstate`
+- **Current**: `gsutil iam ch serviceAccount:github-actions@${PROJECT_ID}.iam.gserviceaccount.com:roles/storage.objectAdmin gs://${PROJECT_ID}-tfstate`
 
 ### Debug Commands
 
 ```bash
 # Check Workload Identity setup (use actual pool name)
 gcloud iam workload-identity-pools describe gh-vpetes-4d532027c607 \
-  --location=global --project=syntio-ai-ops
+  --location=global --project=${PROJECT_ID}
 
 # Test authentication locally (for debugging)
-gcloud auth print-access-token --impersonate-service-account=github-actions-deploy@syntio-ai-ops.iam.gserviceaccount.com
+gcloud auth print-access-token --impersonate-service-account=github-actions-deploy@${PROJECT_ID}.iam.gserviceaccount.com
 
 # Check terraform state
-gsutil ls -la gs://syntio-ai-ops-tfstate/
+gsutil ls -la gs://${PROJECT_ID}-tfstate/
 
 # Verify pipeline assets
-gsutil ls -r gs://syntio-ai-ops-ml_ops_turbo-dev-pl-assets/
+gsutil ls -r gs://${PROJECT_ID}-ml_ops_turbo-dev-pl-assets/
 ```
 
 ## Security Considerations
