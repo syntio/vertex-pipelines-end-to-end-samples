@@ -1,7 +1,7 @@
 # Vertex Pipelines Development Environment Configuration
 
 # GCP Configuration
-project_id = "syntio-ai-ops-dev"
+# project_id will be set via TF_VAR_project_id environment variable
 region     = "europe-west2"
 
 # GitHub Actions Authentication (for CI/CD deployment)
