@@ -177,3 +177,4 @@ resource "google_vertex_ai_metadata_store" "default_metadata_store" {
   region      = var.region
   depends_on  = [google_project_service.gcp_services]
 }
+
