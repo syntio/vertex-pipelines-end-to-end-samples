@@ -108,12 +108,12 @@ e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipe
 	pytest --log-cli-level=INFO tests/${PIPELINE_TEMPLATE}/$(pipeline) --enable_caching=$(enable_pipeline_caching)
 
 env ?= dev
-deploy-infra: ## Deploy the Terraform infrastructure to your project. Requires VERTEX_PROJECT_ID and VERTEX_LOCATION env variables to be set in env.sh. Optionally specify env=<dev|test|prod> (default = dev)
+deploy-infra: ## Deploy the Terraform infrastructure to your project. Requires PROJECT_ID and VERTEX_LOCATION env variables to be set in env.sh. Optionally specify env=<dev|test|prod> (default = dev)
 	@ cd terraform/envs/$(env) && \
-	terraform init -backend-config='bucket=${VERTEX_PROJECT_ID}-tfstate' && \
-	terraform apply -var 'project_id=${VERTEX_PROJECT_ID}' -var 'region=${VERTEX_LOCATION}'
+	terraform init -backend-config='bucket=${PROJECT_ID}-tfstate' && \
+	terraform apply -var 'project_id=${PROJECT_ID}' -var 'region=${VERTEX_LOCATION}'
 
-destroy-infra: ## DESTROY the Terraform infrastructure in your project. Requires VERTEX_PROJECT_ID and VERTEX_LOCATION env variables to be set in env.sh. Optionally specify env=<dev|test|prod> (default = dev)
+destroy-infra: ## DESTROY the Terraform infrastructure in your project. Requires PROJECT_ID and VERTEX_LOCATION env variables to be set in env.sh. Optionally specify env=<dev|test|prod> (default = dev)
 	@ cd terraform/envs/$(env) && \
-	terraform init -backend-config='bucket=${VERTEX_PROJECT_ID}-tfstate' && \
-	terraform destroy -var 'project_id=${VERTEX_PROJECT_ID}' -var 'region=${VERTEX_LOCATION}'
+	terraform init -backend-config='bucket=${PROJECT_ID}-tfstate' && \
+	terraform destroy -var 'project_id=${PROJECT_ID}' -var 'region=${VERTEX_LOCATION}'
