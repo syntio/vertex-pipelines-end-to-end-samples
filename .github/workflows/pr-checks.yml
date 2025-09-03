@@ -4,8 +4,6 @@ name: Pull Request Checks
 "on":
   pull_request:
     branches: [develop, main]
-  push:
-    branches: [matea/testing-vertex-ai-pipeline-exec]
 
 jobs:
   pre-commit:
