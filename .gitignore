@@ -176,6 +176,9 @@ terraform/**/*.zip
 
 # env.sh (only example file should be committed)
 env.sh
+env.dev.sh
+env.test.sh
+env.prod.sh
 
 # VS code configurations
 .vscode
