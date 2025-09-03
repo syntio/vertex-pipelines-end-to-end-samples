@@ -57,12 +57,13 @@ cd terraform/envs/dev
 
 # Copy and edit configuration
 cp dev.tfvars.example dev.tfvars
-# Edit dev.tfvars with your values:
-# - project_id: Your GCP project ID
+# Edit dev.tfvars with your actual values:
+# - project_id: Replace YOUR_PROJECT_ID with your GCP project ID
 # - region: Your preferred GCP region  
 # - github_repository_owner: Your GitHub org/username
 # - github_repository_name: Your repository name
 # - name_prefix: Prefix for resource naming
+# Note: dev.tfvars is gitignored to keep your project details private
 ```
 
 #### Deploy Infrastructure
@@ -99,15 +100,17 @@ terraform output
 # - workload_identity_provider (from module output)
 ```
 
-**Actual dev.tfvars:**
+**Example dev.tfvars (after copying from dev.tfvars.example):**
 ```hcl
 # Copy from dev.tfvars.example and update with your values
-project_id = "${PROJECT_ID}"
+project_id = "my-gcp-project-dev"
 region     = "europe-west2"
-github_repository_owner = "syntio"
-github_repository_name  = "vertex-pipelines-end-to-end-samples"
+github_repository_owner = "my-github-org"
+github_repository_name  = "my-ml-pipelines-repo"
 name_prefix = "ml-ops-turbo"  # Configurable resource prefix
 ```
+
+**Note**: The actual `dev.tfvars` file is gitignored to keep your project configuration private.
 
 **Current Constraint**: This temporarily uses a single project architecture due to project limitations. 
 
