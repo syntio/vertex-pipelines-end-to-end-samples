@@ -107,11 +107,9 @@ jobs:
           terraform init -input=false \
             -backend-config="bucket=${{ env.PROJECT_ID_DEV }}-tfstate"
           terraform plan -input=false \
-            -var-file="dev.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
             -var="region=${{ env.REGION }}"
           terraform apply -auto-approve -input=false \
-            -var-file="dev.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
             -var="region=${{ env.REGION }}"
 
@@ -202,11 +200,9 @@ jobs:
           terraform init -input=false \
             -backend-config="bucket=${{ env.PROJECT_ID_TEST }}-tfstate"
           terraform plan -input=false \
-            -var-file="test.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_TEST }}" \
             -var="region=${{ env.REGION }}"
           terraform apply -auto-approve -input=false \
-            -var-file="test.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_TEST }}" \
             -var="region=${{ env.REGION }}"
 
