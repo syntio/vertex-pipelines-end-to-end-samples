@@ -289,7 +289,7 @@ jobs:
 
       - name: Manual Approval Checkpoint
         run: |
-          echo "🚨 Production deployment requires manual approval"
+          echo "[WARNING] Production deployment requires manual approval"
           echo "Review the terraform plan above before proceeding"
 
       - name: Deploy Infrastructure (Production)
@@ -345,7 +345,7 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          echo "✅ Production deployment completed successfully"
-          echo "📦 Version: ${{ github.event.release.tag_name || 'manual-deploy' }}"
-          echo "🗄️ Assets uploaded to: gs://${{ env.PROJECT_ID_PROD }}-pl-assets/"
-          echo "🏗️ Infrastructure deployed to: ${{ env.PROJECT_ID_PROD }}"
+          echo "[SUCCESS] Production deployment completed successfully"
+          echo "[VERSION] Version: ${{ github.event.release.tag_name || 'manual-deploy' }}"
+          echo "[ASSETS] Assets uploaded to: gs://${{ env.PROJECT_ID_PROD }}-pl-assets/"
+          echo "[INFRA] Infrastructure deployed to: ${{ env.PROJECT_ID_PROD }}"
