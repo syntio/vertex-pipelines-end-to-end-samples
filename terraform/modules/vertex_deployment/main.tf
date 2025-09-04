@@ -107,7 +107,7 @@ module "cloudfunction" {
   environment_variables = {
     VERTEX_LOCATION      = var.region
     VERTEX_PIPELINE_ROOT = google_storage_bucket.pipeline_root_bucket.url
-    VERTEX_PROJECT_ID    = var.project_id
+    PROJECT_ID           = var.project_id
     VERTEX_SA_EMAIL      = google_service_account.pipelines_sa.email
   }
   depends_on = [google_project_service.gcp_services]

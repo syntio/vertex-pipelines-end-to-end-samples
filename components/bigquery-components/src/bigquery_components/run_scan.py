@@ -1,9 +1,10 @@
+import os
 from kfp.dsl import component
 
 
 @component(
     base_image=(
-        "europe-west2-docker.pkg.dev/syntio-ai-ops/"
+        f"europe-west2-docker.pkg.dev/{os.environ.get('PROJECT_ID')}/"
         "ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest"
     ),
 )

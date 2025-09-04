@@ -39,7 +39,7 @@ steps:
         make e2e-tests pipeline=prediction enable_pipeline_caching=False sync_assets=false
     env:
       - VERTEX_LOCATION=${_TEST_VERTEX_LOCATION}
-      - VERTEX_PROJECT_ID=${_TEST_VERTEX_PROJECT_ID}
+      - PROJECT_ID=${_TEST_PROJECT_ID}
       - VERTEX_SA_EMAIL=${_TEST_VERTEX_SA_EMAIL}
       - VERTEX_CMEK_IDENTIFIER=${_TEST_VERTEX_CMEK_IDENTIFIER}
       - VERTEX_NETWORK=${_TEST_VERTEX_NETWORK}

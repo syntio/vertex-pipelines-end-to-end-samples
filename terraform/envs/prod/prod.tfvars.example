@@ -1,7 +1,7 @@
 # Vertex Pipelines Production Environment Configuration
 
 # GCP Configuration  
-project_id = "syntio-ai-ops-prod"
+project_id = "YOUR_PROJECT_ID"
 region     = "europe-west2"
 
 # Resource Naming
