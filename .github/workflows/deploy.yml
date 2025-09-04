@@ -38,6 +38,7 @@ env:
   REGION: ${{ secrets.REGION || 'europe-west2' }}
   WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
   GHA_SERVICE_ACCOUNT: ${{ secrets.GHA_SERVICE_ACCOUNT }}
+  NAME_PREFIX: ${{ secrets.NAME_PREFIX }}
 
 jobs:
   # Pre-deployment checks
@@ -108,10 +109,16 @@ jobs:
             -backend-config="bucket=${{ env.PROJECT_ID_DEV }}-tfstate"
           terraform plan -input=false \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
-            -var="region=${{ env.REGION }}"
+            -var="region=${{ env.REGION }}" \
+            -var="github_repository_owner=${{ github.repository_owner }}" \
+            -var="github_repository_name=${{ github.event.repository.name }}" \
+            -var="name_prefix=${{ env.NAME_PREFIX }}"
           terraform apply -auto-approve -input=false \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
-            -var="region=${{ env.REGION }}"
+            -var="region=${{ env.REGION }}" \
+            -var="github_repository_owner=${{ github.repository_owner }}" \
+            -var="github_repository_name=${{ github.event.repository.name }}" \
+            -var="name_prefix=${{ env.NAME_PREFIX }}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
