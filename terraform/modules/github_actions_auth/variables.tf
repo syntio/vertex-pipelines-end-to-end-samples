@@ -44,6 +44,7 @@ variable "github_actions_sa_roles" {
     # IAM management for service accounts
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountKeyAdmin",
+    "roles/iam.workloadIdentityPoolAdmin",
 
     # Secret Manager
     "roles/secretmanager.admin",
