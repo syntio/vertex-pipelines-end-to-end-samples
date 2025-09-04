@@ -28,10 +28,11 @@ def test_model_batch_predict(tmpdir):
     mock_model = Model(uri=tmpdir, metadata={"resourceName": ""})
     mock_message = {"metrics": {"rmse": 0.01}}
 
-    with patch("google.cloud.aiplatform.Model",), patch(
-        "google.cloud.aiplatform.model_evaluation.ModelEvaluation",
-    ), patch("google.cloud.aiplatform.models.ModelRegistry",), patch(
-        "google.protobuf.json_format.MessageToDict", return_value=mock_message
+    with (
+        patch("google.cloud.aiplatform.Model"),
+        patch("google.cloud.aiplatform.model_evaluation.ModelEvaluation"),
+        patch("google.cloud.aiplatform.models.ModelRegistry"),
+        patch("google.protobuf.json_format.MessageToDict", return_value=mock_message),
     ):
 
         (challenger_wins,) = update_best_model(
