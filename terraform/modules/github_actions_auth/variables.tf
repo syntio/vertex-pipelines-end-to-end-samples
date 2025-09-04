@@ -44,6 +44,7 @@ variable "github_actions_sa_roles" {
     # IAM management for service accounts
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountKeyAdmin",
+    "roles/iam.workloadIdentityPoolAdmin",
 
     # Secret Manager
     "roles/secretmanager.admin",
@@ -80,3 +81,4 @@ variable "enable_apis" {
 }
 
 # workload_identity_pool_id is now auto-generated from project_id + repository hash
+# Role imported into terraform state - deployment should work now

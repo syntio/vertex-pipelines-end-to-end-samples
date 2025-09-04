@@ -136,7 +136,7 @@ def test_convert_payload(env_vars, test_input, expected):
         # encryption_spec_key_name and network present
         (
             {
-                "VERTEX_PROJECT_ID": "my-project-id",
+                "PROJECT_ID": "my-project-id",
                 "VERTEX_LOCATION": "europe-west4",
                 "VERTEX_PIPELINE_ROOT": "gs://my-pipeline-root/folder",
                 "VERTEX_SA_EMAIL": "my-sa@my-project-id.iam.gserviceaccount.com",
@@ -155,7 +155,7 @@ def test_convert_payload(env_vars, test_input, expected):
         # encryption_spec_key_name and network are empty string
         (
             {
-                "VERTEX_PROJECT_ID": "my-project-id",
+                "PROJECT_ID": "my-project-id",
                 "VERTEX_LOCATION": "europe-west4",
                 "VERTEX_PIPELINE_ROOT": "gs://my-pipeline-root/folder",
                 "VERTEX_SA_EMAIL": "my-sa@my-project-id.iam.gserviceaccount.com",
@@ -174,7 +174,7 @@ def test_convert_payload(env_vars, test_input, expected):
         # encryption_spec_key_name and network absent
         (
             {
-                "VERTEX_PROJECT_ID": "my-project-id",
+                "PROJECT_ID": "my-project-id",
                 "VERTEX_LOCATION": "europe-west4",
                 "VERTEX_PIPELINE_ROOT": "gs://my-pipeline-root/folder",
                 "VERTEX_SA_EMAIL": "my-sa@my-project-id.iam.gserviceaccount.com",

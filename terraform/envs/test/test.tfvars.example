@@ -1,9 +1,9 @@
 # Vertex Pipelines Test Environment Configuration
 
 # GCP Configuration
-project_id = "syntio-ai-ops-test"
+project_id = "YOUR_PROJECT_ID"
 region     = "europe-west2"
 
 # GitHub Actions Authentication (for CI/CD deployment)
-github_repository_owner = "syntio"
-github_repository_name  = "vertex-pipelines-end-to-end-samples"
+github_repository_owner = "YOUR_GITHUB_ORG"
+github_repository_name  = "YOUR_REPO_NAME"

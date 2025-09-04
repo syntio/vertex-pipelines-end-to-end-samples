@@ -38,6 +38,7 @@ env:
   REGION: ${{ secrets.REGION || 'europe-west2' }}
   WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
   GHA_SERVICE_ACCOUNT: ${{ secrets.GHA_SERVICE_ACCOUNT }}
+  NAME_PREFIX: ${{ secrets.NAME_PREFIX }}
 
 jobs:
   # Pre-deployment checks
@@ -107,13 +108,17 @@ jobs:
           terraform init -input=false \
             -backend-config="bucket=${{ env.PROJECT_ID_DEV }}-tfstate"
           terraform plan -input=false \
-            -var-file="dev.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
-            -var="region=${{ env.REGION }}"
+            -var="region=${{ env.REGION }}" \
+            -var="github_repository_owner=${{ github.repository_owner }}" \
+            -var="github_repository_name=${{ github.event.repository.name }}" \
+            -var="name_prefix=${{ env.NAME_PREFIX }}"
           terraform apply -auto-approve -input=false \
-            -var-file="dev.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_DEV }}" \
-            -var="region=${{ env.REGION }}"
+            -var="region=${{ env.REGION }}" \
+            -var="github_repository_owner=${{ github.repository_owner }}" \
+            -var="github_repository_name=${{ github.event.repository.name }}" \
+            -var="name_prefix=${{ env.NAME_PREFIX }}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -202,11 +207,9 @@ jobs:
           terraform init -input=false \
             -backend-config="bucket=${{ env.PROJECT_ID_TEST }}-tfstate"
           terraform plan -input=false \
-            -var-file="test.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_TEST }}" \
             -var="region=${{ env.REGION }}"
           terraform apply -auto-approve -input=false \
-            -var-file="test.tfvars" \
             -var="project_id=${{ env.PROJECT_ID_TEST }}" \
             -var="region=${{ env.REGION }}"
 
@@ -286,7 +289,7 @@ jobs:
 
       - name: Manual Approval Checkpoint
         run: |
-          echo "🚨 Production deployment requires manual approval"
+          echo "[WARNING] Production deployment requires manual approval"
           echo "Review the terraform plan above before proceeding"
 
       - name: Deploy Infrastructure (Production)
@@ -342,7 +345,7 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          echo "✅ Production deployment completed successfully"
-          echo "📦 Version: ${{ github.event.release.tag_name || 'manual-deploy' }}"
-          echo "🗄️ Assets uploaded to: gs://${{ env.PROJECT_ID_PROD }}-pl-assets/"
-          echo "🏗️ Infrastructure deployed to: ${{ env.PROJECT_ID_PROD }}"
+          echo "[SUCCESS] Production deployment completed successfully"
+          echo "[VERSION] Version: ${{ github.event.release.tag_name || 'manual-deploy' }}"
+          echo "[ASSETS] Assets uploaded to: gs://${{ env.PROJECT_ID_PROD }}-pl-assets/"
+          echo "[INFRA] Infrastructure deployed to: ${{ env.PROJECT_ID_PROD }}"
