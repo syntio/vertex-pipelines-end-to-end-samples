@@ -81,3 +81,4 @@ variable "enable_apis" {
 }
 
 # workload_identity_pool_id is now auto-generated from project_id + repository hash
+# Trigger deployment to test workloadIdentityPoolAdmin role
