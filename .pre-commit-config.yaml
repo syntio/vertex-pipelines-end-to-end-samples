@@ -33,6 +33,11 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main]
 
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 1.11.0
+    hooks:
+      - id: git-dirty
+        stages: [manual]  # Only runs locally with --hook-stage manual
 
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.26.3
