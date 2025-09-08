@@ -16,3 +16,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0.0", "black", "ruff"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (require real GCP resources)",
+]
