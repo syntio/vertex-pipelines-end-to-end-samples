@@ -193,7 +193,9 @@ def tensorflow_pipeline(
         bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
         profile_scan_id=f"tf-training-post-ingestion-{timestamp.replace(' ', '-').replace(':', '-')}",
         pipeline_stage="post-ingestion",
-        pipeline_run_id="{{$.pipeline_job_name}}"
+        pipeline_run_id="{{$.pipeline_job_name}}",
+        start_date="2022-09-01",  # Required: Time filtering for cost protection
+        end_date="2022-09-30"
     ).after(ingest).set_display_name("Profile scan: Post-ingestion")
 
     # PROFILING: After preprocessing (post-preprocessing stage)
@@ -203,7 +205,9 @@ def tensorflow_pipeline(
         bq_table=f"{project_id}.{dataset_id}.{preprocessed_table}",
         profile_scan_id=f"tf-training-post-preprocessing-{timestamp.replace(' ', '-').replace(':', '-')}",
         pipeline_stage="post-preprocessing",
-        pipeline_run_id="{{$.pipeline_job_name}}"
+        pipeline_run_id="{{$.pipeline_job_name}}",
+        start_date="2022-09-01",  # Required: Time filtering for cost protection
+        end_date="2022-09-30"
     ).after(data_cleaning).set_display_name("Profile scan: Post-preprocessing")
 
     # STORAGE: Store profile results in BigQuery
