@@ -18,7 +18,7 @@ import pathlib
 
 from kfp import compiler, dsl
 from pipelines import generate_query
-from bigquery_components import bq_query_to_table, extract_bq_to_dataset, run_scan
+from bigquery_components import bq_query_to_table, extract_bq_to_dataset
 from vertex_components import (
     lookup_model,
     custom_train_job,
@@ -26,6 +26,7 @@ from vertex_components import (
     update_best_model,
 )
 from dataplex_components import (
+    run_dq_scan,
     run_profile_scan,
     store_profile_results,
     compare_profiles,
@@ -152,7 +153,7 @@ def tensorflow_pipeline(
     ).set_display_name("Ingest data")
 
     scan = (
-        run_scan(
+        run_dq_scan(
             project_id=project_id,
             location=project_location,
             bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
@@ -191,7 +192,7 @@ def tensorflow_pipeline(
         project_id=project_id,
         location=project_location,
         bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
-        profile_scan_id=f"tf-training-post-ingestion-{timestamp.replace(' ', '-').replace(':', '-')}",
+        profile_scan_id="tf-training-post-ingestion",
         pipeline_stage="post-ingestion",
         pipeline_run_id="{{$.pipeline_job_name}}"
     ).after(ingest).set_display_name("Profile scan: Post-ingestion")
@@ -201,7 +202,7 @@ def tensorflow_pipeline(
         project_id=project_id,
         location=project_location,
         bq_table=f"{project_id}.{dataset_id}.{preprocessed_table}",
-        profile_scan_id=f"tf-training-post-preprocessing-{timestamp.replace(' ', '-').replace(':', '-')}",
+        profile_scan_id="tf-training-post-preprocessing",
         pipeline_stage="post-preprocessing",
         pipeline_run_id="{{$.pipeline_job_name}}"
     ).after(data_cleaning).set_display_name("Profile scan: Post-preprocessing")
