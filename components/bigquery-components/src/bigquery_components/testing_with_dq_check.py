@@ -45,8 +45,8 @@ def extract_pipeline():
         location=location,
         bq_table=f"{project_id}.chicago_taxi_trips.taxi_trips_sample_2",
         dq_scan_id=f"taxi-trips-scan-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-        start_date=os.environ.get("DATAPLEX_FILTER_START_DATE", "2022-09-01"),
-        end_date=os.environ.get("DATAPLEX_FILTER_END_DATE", "2022-09-30"),
+        start_date=os.environ.get("TABLE_FILTER_START_DATE", "2022-09-01"),
+        end_date=os.environ.get("TABLE_FILTER_END_DATE", "2022-09-30"),
     )
 
     dq_scan.after(query_task)
