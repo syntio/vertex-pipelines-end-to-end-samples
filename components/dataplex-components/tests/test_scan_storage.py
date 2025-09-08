@@ -51,7 +51,7 @@ def test_store_profile_results_success(sample_profile_results):
         assert trip_total_row["scan_timestamp"] == sample_profile_results["scan_metadata"]["scan_timestamp"]
         assert trip_total_row["pipeline_run_id"] == "test-pipeline-run-456"
         assert trip_total_row["pipeline_stage"] == "post-ingestion"
-        assert trip_total_row["table_name"] == "syntio-ai-ops.preprocessing.test_table"
+        assert trip_total_row["table_name"] == "project-id.preprocessing.test_table"
         assert trip_total_row["scan_id"] == "test-scan-123"
         
         # Column info
