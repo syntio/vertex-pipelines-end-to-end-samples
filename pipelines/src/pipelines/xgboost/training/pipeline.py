@@ -157,8 +157,8 @@ def xgboost_pipeline(
                 location=project_location,
                 bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
                 dq_scan_id=f"taxi-trips-scan-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-                start_date="2022-09-01",  # Required: Time filtering for cost protection
-                end_date="2022-09-30"
+                start_date=os.environ.get("DATAPLEX_FILTER_START_DATE", "2022-09-01"),  # Required: Time filtering for cost protection
+                end_date=os.environ.get("DATAPLEX_FILTER_END_DATE", "2022-09-30")
             )
             .after(ingest)
             .set_display_name("Run DQ scan")
@@ -197,8 +197,8 @@ def xgboost_pipeline(
         profile_scan_id="xgb-training-post-ingestion",
         pipeline_stage="post-ingestion",
         pipeline_run_id="{{$.pipeline_job_name}}",
-        start_date="2022-09-01",  # Required: Time filtering for cost protection
-        end_date="2022-09-30"
+        start_date=os.environ.get("DATAPLEX_FILTER_START_DATE", "2022-09-01"),
+        end_date=os.environ.get("DATAPLEX_FILTER_END_DATE", "2022-09-30")
     ).after(ingest).set_display_name("Profile scan: Post-ingestion")
 
     # PROFILING: After preprocessing (post-preprocessing stage)
@@ -209,8 +209,8 @@ def xgboost_pipeline(
         profile_scan_id="xgb-training-post-preprocessing",
         pipeline_stage="post-preprocessing",
         pipeline_run_id="{{$.pipeline_job_name}}",
-        start_date="2022-09-01",  # Required: Time filtering for cost protection
-        end_date="2022-09-30"
+        start_date=os.environ.get("DATAPLEX_FILTER_START_DATE", "2022-09-01"),
+        end_date=os.environ.get("DATAPLEX_FILTER_END_DATE", "2022-09-30")
     ).after(data_cleaning).set_display_name("Profile scan: Post-preprocessing")
 
     # STORAGE: Store profile results in BigQuery
