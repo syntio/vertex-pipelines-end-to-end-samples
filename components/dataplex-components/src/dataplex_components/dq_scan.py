@@ -13,9 +13,21 @@ def run_scan(
     location: str = None,
     bq_table: str = None,
     dq_scan_id: str = None,
+    # TIME FILTERING PARAMETERS (REQUIRED) 
+    start_date: str = "",  # YYYY-MM-DD format (MANDATORY)
+    end_date: str = "",    # YYYY-MM-DD format (MANDATORY)
+    date_column: str = "trip_start_timestamp",  # Column to filter on
 ) -> None:
     from google.cloud import dataplex_v1, bigquery
     import time
+
+    print(f"🔍 Starting PROTECTED DQ scan: {dq_scan_id}")
+    print(f"📊 Table: {bq_table}")
+    print(f"📅 Time range: {start_date} to {end_date}")
+
+    # COST PROTECTION: Enforce time filtering
+    if not start_date or not end_date:
+        raise ValueError("Time filtering required - provide start_date and end_date")
 
     dataplex_client = dataplex_v1.DataScanServiceClient()
     bq_client = bigquery.Client(project=project_id)

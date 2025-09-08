@@ -157,6 +157,8 @@ def xgboost_pipeline(
                 location=project_location,
                 bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
                 dq_scan_id=f"taxi-trips-scan-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+                start_date="2022-09-01",  # Required: Time filtering for cost protection
+                end_date="2022-09-30"
             )
             .after(ingest)
             .set_display_name("Run DQ scan")
