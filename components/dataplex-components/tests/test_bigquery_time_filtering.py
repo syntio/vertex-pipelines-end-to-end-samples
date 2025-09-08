@@ -6,7 +6,7 @@ import pytest
 import os
 import time
 from dataplex_components.profile_scan import run_profile_scan
-from dataplex_components.dq_scan import run_dq_scan
+from dataplex_components.dq_scan import run_scan
 from dataplex_components.protected_access import protected_table_access
 
 
@@ -71,7 +71,7 @@ def test_real_dq_scan_cost_protection():
     big_table = f"{project_id}.chicago_taxi_trips.taxi_trips"
     
     # DQ scan single day only
-    scan_result = run_dq_scan.python_func(
+    scan_result = run_scan.python_func(
         project_id=project_id,
         location="europe-west1", 
         bq_table=big_table,
