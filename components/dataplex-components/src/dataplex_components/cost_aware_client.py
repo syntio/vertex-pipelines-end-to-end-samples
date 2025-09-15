@@ -31,8 +31,7 @@ class CostAwareBigQueryClient:
         # Create dry run config
         dry_run_config = bigquery.QueryJobConfig(
             dry_run=True,
-            use_query_cache=False,
-            **{k: v for k, v in job_config._properties.items() if k != 'dryRun'}
+            use_query_cache=False
         )
         
         try:
