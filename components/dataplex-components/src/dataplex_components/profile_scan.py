@@ -59,13 +59,24 @@ def run_profile_scan(
     print(f"🏗️ Stage: {pipeline_stage}")
     print(f"📅 Time range: {start_date} to {end_date}")
 
-    # COST PROTECTION: Enforce time filtering
-    if not start_date or not end_date:
-        raise ValueError("Time filtering required - provide start_date and end_date")
-
-    # Initialize clients
+    # Initialize clients first for cost estimation
     dataplex_client = dataplex_v1.DataScanServiceClient()
     bq_client = bigquery_Client(project=project_id)
+    
+    # Show cost estimate for full table scan (what would happen without protection)
+    if not start_date or not end_date:
+        print(f"💰 Estimating cost of unprotected full table scan...")
+        try:
+            full_scan_query = f"SELECT * FROM `{bq_table}`"
+            bytes_processed, estimated_cost = bq_client.estimate_query_cost(full_scan_query)
+            gb_processed = bytes_processed / (1024**3)
+            print(f"⚠️  UNPROTECTED SCAN COST: €{estimated_cost:.2f} ({gb_processed:.2f} GB)")
+            print(f"💡 With time filtering, this could be €0.05-0.15 instead!")
+        except Exception as e:
+            print(f"⚠️  Could not estimate full scan cost: {e}")
+        
+        # COST PROTECTION: Enforce time filtering
+        raise ValueError("Time filtering required - provide start_date and end_date")
 
     # Use protected table access with time filtering
     with protected_table_access(
