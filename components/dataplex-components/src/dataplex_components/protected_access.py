@@ -53,8 +53,8 @@ def protected_table_access(
     except ValueError:
         raise ValueError("Dates must be in YYYY-MM-DD format")
     
-    if start_date >= end_date:
-        raise ValueError("start_date must be before end_date")
+    if start_date > end_date:
+        raise ValueError("start_date must be before or equal to end_date")
     
     # Parse table components
     parts = bq_table.split(".")
