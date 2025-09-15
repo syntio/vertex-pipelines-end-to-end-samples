@@ -27,7 +27,7 @@ def test_real_protected_table_access():
     ) as filtered_view:
         print(f"Created filtered view: {filtered_view}")
         assert "filtered_" in filtered_view
-        assert "2022" in filtered_view
+        assert "syntio-ai-ops" in filtered_view
         
         # TODO: Add BigQuery client check that view exists and has correct row count
 
