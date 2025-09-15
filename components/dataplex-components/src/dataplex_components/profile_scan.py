@@ -71,7 +71,6 @@ def run_profile_scan(
             bytes_processed, estimated_cost = bq_client.estimate_query_cost(full_scan_query)
             gb_processed = bytes_processed / (1024**3)
             print(f"⚠️  UNPROTECTED SCAN COST: €{estimated_cost:.2f} ({gb_processed:.2f} GB)")
-            print(f"💡 With time filtering, this could be €0.05-0.15 instead!")
         except Exception as e:
             print(f"⚠️  Could not estimate full scan cost: {e}")
         
