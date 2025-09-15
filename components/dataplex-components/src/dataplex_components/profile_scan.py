@@ -1,10 +1,13 @@
 from kfp import dsl
-from typing import NamedTuple
-import json
+from typing import NamedTuple, Optional
+
 
 @dsl.component(
     base_image="europe-west2-docker.pkg.dev/PROJECT_ID/ml-pipeline-containers/ml-pipeline-base:latest",
-    packages_to_install=["google-cloud-dataplex>=1.0.0", "google-cloud-bigquery>=3.25.0"]
+    packages_to_install=[
+        "google-cloud-dataplex>=1.0.0",
+        "google-cloud-bigquery>=3.25.0",
+    ],
 )
 def run_profile_scan(
     project_id: str,
@@ -12,14 +15,20 @@ def run_profile_scan(
     bq_table: str = "",  # Format: "project.dataset.table"
     profile_scan_id: str = "",
     pipeline_stage: str = "post-ingestion",  # "post-ingestion" | "post-preprocessing"
-    pipeline_run_id: str = ""
-) -> NamedTuple("Outputs", [
-    ("profile_results", dict),
-    ("profile_scan_id", str),
-    ("metrics_summary", dict)
-]):
+    pipeline_run_id: str = "",
+    # TIME FILTERING PARAMETERS (REQUIRED)
+    start_date: str = "",  # YYYY-MM-DD format (MANDATORY)
+    end_date: str = "",    # YYYY-MM-DD format (MANDATORY)
+    date_column: str = "trip_start_timestamp",  # Column to filter on
+) -> NamedTuple(
+    "Outputs",
+    [("profile_results", dict), ("profile_scan_id", str), ("metrics_summary", dict)],
+):
     """
-    Run Dataplex profile scan and extract comprehensive metrics
+    Run Dataplex profile scan with MANDATORY time filtering for cost protection.
+    
+    Creates temporary filtered view and profiles only the specified time range.
+    Prevents expensive full-table scans on 211M row datasets.
 
     Args:
         project_id: GCP project ID
@@ -28,161 +37,215 @@ def run_profile_scan(
         profile_scan_id: Unique ID for this profile scan
         pipeline_stage: Stage when profiling occurs
         pipeline_run_id: Pipeline execution ID for tracking
+        start_date: Start date for filtering (YYYY-MM-DD) - REQUIRED
+        end_date: End date for filtering (YYYY-MM-DD) - REQUIRED  
+        date_column: Column to filter on (default: trip_start_timestamp)
 
     Returns:
-        profile_results: Detailed profiling metrics
+        profile_results: Detailed profiling metrics for time-filtered data
         profile_scan_id: ID of created scan
         metrics_summary: High-level summary metrics
+        
+    Raises:
+        ValueError: If start_date or end_date not provided (cost protection)
     """
-    from google.cloud import dataplex_v1, bigquery
+    from google.cloud import dataplex_v1
     import time
-    import json
-    from typing import Dict, Any, List
+    from .protected_access import protected_table_access
+    from .cost_aware_client import Client as bigquery_Client
 
-    print(f"🔍 Starting profile scan: {profile_scan_id}")
-    print(f"📊 Table: {bq_table}")
+    print(f"🔍 Starting PROTECTED profile scan: {profile_scan_id}")
+    print(f"📊 Original table: {bq_table}")
     print(f"🏗️ Stage: {pipeline_stage}")
+    print(f"📅 Time range: {start_date} to {end_date}")
 
-    # Initialize clients
+    # Initialize clients first for cost estimation
     dataplex_client = dataplex_v1.DataScanServiceClient()
-    bq_client = bigquery.Client(project=project_id)
+    bq_client = bigquery_Client(project=project_id)
+    
+    # Show cost estimate for full table scan (what would happen without protection)
+    if not start_date or not end_date:
+        print(f"💰 Estimating cost of unprotected full table scan...")
+        try:
+            full_scan_query = f"SELECT * FROM `{bq_table}`"
+            bytes_processed, estimated_cost = bq_client.estimate_query_cost(full_scan_query)
+            gb_processed = bytes_processed / (1024**3)
+            print(f"⚠️  UNPROTECTED SCAN COST: €{estimated_cost:.2f} ({gb_processed:.2f} GB)")
+        except Exception as e:
+            print(f"⚠️  Could not estimate full scan cost: {e}")
+        
+        # COST PROTECTION: Enforce time filtering
+        raise ValueError("Time filtering required - provide start_date and end_date")
 
-    # Parse BigQuery table reference
-    project, dataset, table = bq_table.split(".")
-    resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
+    # Use protected table access with time filtering
+    with protected_table_access(
+        bq_table=bq_table,
+        start_date=start_date,
+        end_date=end_date,
+        date_column=date_column,
+        project_id=project_id
+    ) as filtered_view_name:
+        
+        print(f"🔒 Using filtered view: {filtered_view_name}")
+        
+        # Parse filtered view reference for Dataplex
+        project, dataset, table = filtered_view_name.replace('`', '').split(".")
+        resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
 
-    # Create Dataplex profile scan
-    parent = f"projects/{project_id}/locations/{location}"
-    data_source = dataplex_v1.DataSource(resource=resource_uri)
+        # Create Dataplex profile scan
+        parent = f"projects/{project_id}/locations/{location}"
+        data_source = dataplex_v1.DataSource(resource=resource_uri)
 
-    profile_scan = dataplex_v1.DataScan(
-        data=data_source,
-        data_profile_spec=dataplex_v1.DataProfileSpec()
-    )
-
-    scan_full_name = f"{parent}/dataScans/{profile_scan_id}"
-
-    try:
-        # Check if scan already exists
-        existing_scan = dataplex_client.get_data_scan(name=scan_full_name)
-        print(f"✅ Profile scan '{profile_scan_id}' already exists")
-    except Exception:
-        print(f"📝 Creating new profile scan: {profile_scan_id}")
-        operation = dataplex_client.create_data_scan(
-            parent=parent,
-            data_scan_id=profile_scan_id,
-            data_scan=profile_scan
+        profile_scan = dataplex_v1.DataScan(
+            data=data_source, data_profile_spec=dataplex_v1.DataProfileSpec()
         )
-        operation.result()  # Wait for creation
-        print(f"✅ Created profile scan: {profile_scan_id}")
 
-    # Run the profile scan
-    print(f"🚀 Running profile scan...")
-    run_request = dataplex_v1.RunDataScanRequest(name=scan_full_name)
-    run_response = dataplex_client.run_data_scan(request=run_request)
+        scan_full_name = f"{parent}/dataScans/{profile_scan_id}"
 
-    print(f"⏳ Waiting for scan completion...")
-    time.sleep(60)  # Wait for scan to complete
+        try:
+            # Check if scan already exists
+            existing_scan = dataplex_client.get_data_scan(name=scan_full_name)
+            print(f"✅ Profile scan '{profile_scan_id}' already exists")
+        except Exception:
+            print(f"📝 Creating new profile scan: {profile_scan_id}")
+            operation = dataplex_client.create_data_scan(
+                parent=parent, data_scan_id=profile_scan_id, data_scan=profile_scan
+            )
+            operation.result()  # Wait for creation
+            print(f"✅ Created profile scan: {profile_scan_id}")
 
-    # Get scan results
-    jobs = dataplex_client.list_data_scan_jobs(parent=scan_full_name)
-    latest_job = None
-    for job in jobs:
-        if latest_job is None or job.start_time > latest_job.start_time:
-            latest_job = job
+        # Run the profile scan
+        print("🚀 Running profile scan...")
+        run_request = dataplex_v1.RunDataScanRequest(name=scan_full_name)
+        run_response = dataplex_client.run_data_scan(request=run_request)
 
-    if not latest_job:
-        raise Exception("No scan job found!")
+        print("⏳ Waiting for scan completion...")
+        time.sleep(60)  # Wait for scan to complete
 
-    print(f"📈 Processing scan results...")
+        # Get scan results
+        jobs = dataplex_client.list_data_scan_jobs(parent=scan_full_name)
+        latest_job = None
+        for job in jobs:
+            if latest_job is None or job.start_time > latest_job.start_time:
+                latest_job = job
 
-    # Extract comprehensive metrics
-    profile_results = {
-        "scan_metadata": {
-            "scan_id": profile_scan_id,
-            "table_name": bq_table,
-            "pipeline_stage": pipeline_stage,
-            "pipeline_run_id": pipeline_run_id,
-            "scan_timestamp": latest_job.start_time.isoformat(),
-            "job_state": latest_job.state.name
-        },
-        "table_metrics": {},
-        "column_metrics": {}
-    }
+        if not latest_job:
+            raise Exception("No scan job found!")
 
-    if latest_job.data_profile_result:
-        profile = latest_job.data_profile_result.profile
+        print("📈 Processing scan results...")
 
-        # Table-level metrics
-        profile_results["table_metrics"] = {
-            "row_count": profile.row_count,
-            "column_count": len(profile.fields) if profile.fields else 0
+        # Extract comprehensive metrics
+        profile_results = {
+            "scan_metadata": {
+                "scan_id": profile_scan_id,
+                "table_name": bq_table,
+                "pipeline_stage": pipeline_stage,
+                "pipeline_run_id": pipeline_run_id,
+                "scan_timestamp": latest_job.start_time.isoformat(),
+                "job_state": latest_job.state.name,
+            },
+            "table_metrics": {},
+            "column_metrics": {},
         }
 
-        # Column-level metrics
-        if profile.fields:
-            for field in profile.fields:
-                column_name = field.name
-                column_metrics = {
-                    "name": column_name,
-                    "type": field.type_,
-                    "mode": field.mode
-                }
+        if latest_job.data_profile_result:
+            profile = latest_job.data_profile_result.profile
 
-                if field.profile:
-                    prof = field.profile
+            # Table-level metrics
+            profile_results["table_metrics"] = {
+                "row_count": profile.row_count,
+                "column_count": len(profile.fields) if profile.fields else 0,
+            }
 
-                    # Null statistics
-                    column_metrics.update({
-                        "null_ratio": prof.null_ratio,
-                        "distinct_ratio": prof.distinct_ratio
-                    })
+            # Column-level metrics
+            if profile.fields:
+                for field in profile.fields:
+                    column_name = field.name
+                    column_metrics = {
+                        "name": column_name,
+                        "type": field.type_,
+                        "mode": field.mode,
+                    }
 
-                    # Numeric statistics
-                    if hasattr(prof, 'double_profile') and prof.double_profile:
-                        dp = prof.double_profile
-                        column_metrics.update({
-                            "min_value": dp.min,
-                            "max_value": dp.max,
-                            "mean_value": dp.mean,
-                            "stddev_value": dp.standard_deviation,
-                            "percentiles": {
-                                "p5": dp.quartiles[0] if dp.quartiles else None,
-                                "p25": dp.quartiles[1] if len(dp.quartiles) > 1 else None,
-                                "p50": dp.quartiles[2] if len(dp.quartiles) > 2 else None,
-                                "p75": dp.quartiles[3] if len(dp.quartiles) > 3 else None,
-                                "p95": dp.quartiles[4] if len(dp.quartiles) > 4 else None
+                    if field.profile:
+                        prof = field.profile
+
+                        # Null statistics
+                        column_metrics.update(
+                            {
+                                "null_ratio": prof.null_ratio,
+                                "distinct_ratio": prof.distinct_ratio,
                             }
-                        })
+                        )
 
-                    # String/Categorical statistics
-                    if hasattr(prof, 'string_profile') and prof.string_profile:
-                        sp = prof.string_profile
-                        top_values = []
-                        if sp.top_n_values:
-                            for tv in sp.top_n_values:
-                                top_values.append({
-                                    "value": tv.value,
-                                    "count": tv.count
-                                })
+                        # Numeric statistics
+                        if hasattr(prof, "double_profile") and prof.double_profile:
+                            dp = prof.double_profile
+                            column_metrics.update(
+                                {
+                                    "min_value": dp.min,
+                                    "max_value": dp.max,
+                                    "mean_value": dp.mean,
+                                    "stddev_value": dp.standard_deviation,
+                                    "percentiles": {
+                                        "p5": dp.quartiles[0] if dp.quartiles else None,
+                                        "p25": (
+                                            dp.quartiles[1]
+                                            if len(dp.quartiles) > 1
+                                            else None
+                                        ),
+                                        "p50": (
+                                            dp.quartiles[2]
+                                            if len(dp.quartiles) > 2
+                                            else None
+                                        ),
+                                        "p75": (
+                                            dp.quartiles[3]
+                                            if len(dp.quartiles) > 3
+                                            else None
+                                        ),
+                                        "p95": (
+                                            dp.quartiles[4]
+                                            if len(dp.quartiles) > 4
+                                            else None
+                                        ),
+                                    },
+                                }
+                            )
 
-                        column_metrics.update({
-                            "unique_count": sp.unique_count,
-                            "top_values": top_values
-                        })
+                        # String/Categorical statistics
+                        if hasattr(prof, "string_profile") and prof.string_profile:
+                            sp = prof.string_profile
+                            top_values = []
+                            if sp.top_n_values:
+                                for tv in sp.top_n_values:
+                                    top_values.append(
+                                        {"value": tv.value, "count": tv.count}
+                                    )
 
-                profile_results["column_metrics"][column_name] = column_metrics
+                            column_metrics.update(
+                                {"unique_count": sp.unique_count, "top_values": top_values}
+                            )
 
-    # Generate metrics summary
-    metrics_summary = {
-        "total_columns_profiled": len(profile_results["column_metrics"]),
-        "table_row_count": profile_results["table_metrics"].get("row_count", 0),
-        "pipeline_stage": pipeline_stage,
-        "scan_status": "completed" if latest_job.state.name == "SUCCEEDED" else "failed"
-    }
+                    profile_results["column_metrics"][column_name] = column_metrics
 
-    print(f"✅ Profile scan completed successfully!")
-    print(f"📊 Profiled {metrics_summary['total_columns_profiled']} columns")
-    print(f"🔢 Table has {metrics_summary['table_row_count']} rows")
+        # Generate metrics summary with time filtering info
+        metrics_summary = {
+            "total_columns_profiled": len(profile_results["column_metrics"]),
+            "table_row_count": profile_results["table_metrics"].get("row_count", 0),
+            "pipeline_stage": pipeline_stage,
+            "scan_status": (
+                "completed" if latest_job.state.name == "SUCCEEDED" else "failed"
+            ),
+            "time_filtered": True,
+            "filter_start_date": start_date,
+            "filter_end_date": end_date,
+            "filter_column": date_column
+        }
 
-    return profile_results, profile_scan_id, metrics_summary
+        print("✅ PROTECTED profile scan completed successfully!")
+        print(f"📊 Profiled {metrics_summary['total_columns_profiled']} columns")
+        print(f"🔢 Filtered table has {metrics_summary['table_row_count']} rows")
+        print(f"📅 Time range: {start_date} to {end_date}")
+
+        return profile_results, profile_scan_id, metrics_summary

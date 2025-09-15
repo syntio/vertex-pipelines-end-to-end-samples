@@ -37,7 +37,9 @@ def test_run_profile_scan_success(mock_dataplex_profile_result):
             bq_table="test-project.dataset.table",
             profile_scan_id="test-scan-123",
             pipeline_stage="post-ingestion",
-            pipeline_run_id="test-pipeline-456"
+            pipeline_run_id="test-pipeline-456",
+            start_date="2022-09-01",
+            end_date="2022-09-30"
         )
         
         # Verify results structure
@@ -86,7 +88,9 @@ def test_run_profile_scan_existing_scan(mock_dataplex_profile_result):
             bq_table="test-project.dataset.table",
             profile_scan_id="existing-scan",
             pipeline_stage="post-preprocessing",
-            pipeline_run_id="test-pipeline"
+            pipeline_run_id="test-pipeline",
+            start_date="2022-09-01",
+            end_date="2022-09-30"
         )
         
         # Verify scan creation was NOT called
@@ -116,7 +120,9 @@ def test_run_profile_scan_no_job_results():
                 bq_table="test-project.dataset.table", 
                 profile_scan_id="test-scan",
                 pipeline_stage="post-ingestion",
-                pipeline_run_id="test-pipeline"
+                pipeline_run_id="test-pipeline",
+                start_date="2022-09-01",
+                end_date="2022-09-30"
             )
 
 
@@ -137,7 +143,9 @@ def test_run_profile_scan_percentiles_parsing(mock_dataplex_profile_result):
             bq_table="test-project.dataset.table",
             profile_scan_id="test-scan",
             pipeline_stage="post-ingestion", 
-            pipeline_run_id="test-pipeline"
+            pipeline_run_id="test-pipeline",
+            start_date="2022-09-01",
+            end_date="2022-09-30"
         )
         
         # Verify percentiles mapping

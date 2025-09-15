@@ -84,7 +84,7 @@ def sample_profile_results():
     return {
         "scan_metadata": {
             "scan_id": "test-scan-123",
-            "table_name": "syntio-ai-ops.preprocessing.test_table",
+            "table_name": "project-id.preprocessing.test_table",
             "pipeline_stage": "post-ingestion",
             "pipeline_run_id": "test-pipeline-run-456",
             "scan_timestamp": "2024-01-15T10:30:00+00:00",
