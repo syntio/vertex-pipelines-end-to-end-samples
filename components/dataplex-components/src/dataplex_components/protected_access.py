@@ -93,8 +93,18 @@ def protected_table_access(
         """
         filtered_rows = client.query(filtered_query).to_dataframe().iloc[0]['filtered_rows']
         
+        # Calculate actual costs using dry run estimates
+        full_scan_query = f"SELECT * FROM `{bq_table}`"
+        full_bytes, full_cost = client.estimate_query_cost(full_scan_query)
+        
+        filtered_scan_query = f"SELECT * FROM `{bq_table}` WHERE DATE({date_column}) BETWEEN '{start_date}' AND '{end_date}'"  
+        filtered_bytes, filtered_cost = client.estimate_query_cost(filtered_scan_query)
+        
         cost_reduction = ((total_rows - filtered_rows) / total_rows * 100) if total_rows > 0 else 0
-        print(f"💰 Estimated cost reduction: {cost_reduction:.1f}% ({filtered_rows:,} vs {total_rows:,} rows)")
+        cost_savings = full_cost - filtered_cost
+        
+        print(f"💰 Cost estimate - Full scan: €{full_cost:.2f} → Filtered: €{filtered_cost:.2f} (saves €{cost_savings:.2f})")
+        print(f"📊 Row reduction: {cost_reduction:.1f}% ({filtered_rows:,} vs {total_rows:,} rows)")
         
     except Exception as e:
         print(f"⚠️ Could not estimate cost savings: {e}")
