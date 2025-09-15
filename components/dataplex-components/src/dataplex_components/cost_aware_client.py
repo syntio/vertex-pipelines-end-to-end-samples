@@ -132,3 +132,10 @@ class CostAwareBigQueryClient:
 def get_cost_aware_client(project_id: Optional[str] = None) -> CostAwareBigQueryClient:
     """Factory function to create cost-aware BigQuery client"""
     return CostAwareBigQueryClient(project_id)
+
+
+# Drop-in replacement for google.cloud.bigquery.Client
+class Client(CostAwareBigQueryClient):
+    """Drop-in replacement for BigQuery Client with cost awareness"""
+    def __init__(self, project=None):
+        super().__init__(project_id=project)

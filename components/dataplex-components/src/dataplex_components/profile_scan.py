@@ -49,9 +49,10 @@ def run_profile_scan(
     Raises:
         ValueError: If start_date or end_date not provided (cost protection)
     """
-    from google.cloud import dataplex_v1, bigquery
+    from google.cloud import dataplex_v1
     import time
     from .protected_access import protected_table_access
+    from .cost_aware_client import Client as bigquery_Client
 
     print(f"🔍 Starting PROTECTED profile scan: {profile_scan_id}")
     print(f"📊 Original table: {bq_table}")
@@ -64,7 +65,7 @@ def run_profile_scan(
 
     # Initialize clients
     dataplex_client = dataplex_v1.DataScanServiceClient()
-    bq_client = bigquery.Client(project=project_id)
+    bq_client = bigquery_Client(project=project_id)
 
     # Use protected table access with time filtering
     with protected_table_access(

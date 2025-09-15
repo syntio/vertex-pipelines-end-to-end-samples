@@ -40,7 +40,7 @@ def protected_table_access(
             # Use view_name instead of original table
             dataplex_scan(view_name)
     """
-    from google.cloud import bigquery
+    from .cost_aware_client import Client as bigquery_Client
     
     # Validate required parameters
     if not start_date or not end_date:
@@ -72,8 +72,8 @@ def protected_table_access(
     view_name = f"{table}_filtered_{timestamp}_{random_suffix}"
     full_view_name = f"{target_project}.{dataset}.{view_name}"
     
-    # Initialize BigQuery client
-    client = bigquery.Client(project=target_project)
+    # Initialize cost-aware BigQuery client
+    client = bigquery_Client(project=target_project)
     
     print(f"🔒 Creating protected view: {view_name}")
     print(f"📅 Date range: {start_date} to {end_date}")
