@@ -4,21 +4,28 @@ import os
 import time
 
 # Set environment
-os.environ['PROJECT_ID'] = 'syntio-ai-ops'
+os.environ["PROJECT_ID"] = "syntio-ai-ops"
+
 
 # Mock the KFP component for testing
 class MockComponent:
     def __init__(self, **kwargs):
         pass
+
     def __call__(self, func):
         func.python_func = func
         return func
 
+
 import sys
-sys.modules['kfp'] = type('MockModule', (), {'dsl': type('MockDSL', (), {'component': MockComponent})})()
+
+sys.modules["kfp"] = type(
+    "MockModule", (), {"dsl": type("MockDSL", (), {"component": MockComponent})}
+)()
 
 # Import the fixed profile scan
 from src.dataplex_components.profile_scan import run_profile_scan
+
 
 def test_fixed_profile_scan():
     """Test the fixed profile scan with synchronous waiting"""
@@ -40,7 +47,7 @@ def test_fixed_profile_scan():
             pipeline_stage="test",
             pipeline_run_id="manual-test",
             start_date="2022-09-01",
-            end_date="2022-09-01"
+            end_date="2022-09-01",
         )
 
         print(f"✅ Profile scan completed: {scan_id}")
@@ -61,7 +68,9 @@ def test_fixed_profile_scan():
     except Exception as e:
         print(f"❌ Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     test_fixed_profile_scan()

@@ -4,20 +4,27 @@ import os
 import time
 
 # Set environment
-os.environ['PROJECT_ID'] = 'syntio-ai-ops'
+os.environ["PROJECT_ID"] = "syntio-ai-ops"
+
 
 # Mock the KFP component for debugging
 class MockComponent:
     def __init__(self, **kwargs):
         pass
+
     def __call__(self, func):
         func.python_func = func
         return func
 
+
 import sys
-sys.modules['kfp'] = type('MockModule', (), {'dsl': type('MockDSL', (), {'component': MockComponent})})()
+
+sys.modules["kfp"] = type(
+    "MockModule", (), {"dsl": type("MockDSL", (), {"component": MockComponent})}
+)()
 
 from google.cloud import dataplex_v1
+
 
 def test_dataplex_on_permanent_table():
     """Test Dataplex profiling on the permanent partitioned table"""
@@ -74,7 +81,7 @@ def test_dataplex_on_permanent_table():
         if latest_job:
             print(f"📋 Job state: {latest_job.state.name}")
 
-            if hasattr(latest_job, 'message') and latest_job.message:
+            if hasattr(latest_job, "message") and latest_job.message:
                 print(f"📝 Job message: {latest_job.message}")
 
             if latest_job.data_profile_result:
@@ -91,7 +98,9 @@ def test_dataplex_on_permanent_table():
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     test_dataplex_on_permanent_table()

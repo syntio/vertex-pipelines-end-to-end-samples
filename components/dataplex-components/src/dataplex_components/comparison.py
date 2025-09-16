@@ -36,10 +36,9 @@ def compare_profiles(
         comparison_summary: High-level comparison summary
     """
     from google.cloud import bigquery
-    import pandas as pd
-    from datetime import datetime, timedelta
+    from datetime import datetime
 
-    print(f"📊 Comparing current profile with historical baselines...")
+    print("📊 Comparing current profile with historical baselines...")
     print(f"🎯 Deviation threshold: {deviation_threshold * 100}%")
 
     client = bigquery.Client(project=project_id)
@@ -164,7 +163,7 @@ def compare_profiles(
         "status": "completed",
     }
 
-    print(f"✅ Profile comparison completed!")
+    print("✅ Profile comparison completed!")
     print(f"📊 Compared {comparison_summary['total_columns_compared']} columns")
     print(f"🚨 Found {significant_count} significant changes")
 

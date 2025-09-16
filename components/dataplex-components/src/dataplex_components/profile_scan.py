@@ -1,5 +1,5 @@
 from kfp import dsl
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 
 @dsl.component(
@@ -18,7 +18,7 @@ def run_profile_scan(
     pipeline_run_id: str = "",
     # TIME FILTERING PARAMETERS (REQUIRED)
     start_date: str = "",  # YYYY-MM-DD format (MANDATORY)
-    end_date: str = "",    # YYYY-MM-DD format (MANDATORY)
+    end_date: str = "",  # YYYY-MM-DD format (MANDATORY)
     date_column: str = "trip_start_timestamp",  # Column to filter on
 ) -> NamedTuple(
     "Outputs",
@@ -26,7 +26,7 @@ def run_profile_scan(
 ):
     """
     Run Dataplex profile scan with MANDATORY time filtering for cost protection.
-    
+
     Creates temporary filtered view and profiles only the specified time range.
     Prevents expensive full-table scans on 211M row datasets.
 
@@ -38,14 +38,14 @@ def run_profile_scan(
         pipeline_stage: Stage when profiling occurs
         pipeline_run_id: Pipeline execution ID for tracking
         start_date: Start date for filtering (YYYY-MM-DD) - REQUIRED
-        end_date: End date for filtering (YYYY-MM-DD) - REQUIRED  
+        end_date: End date for filtering (YYYY-MM-DD) - REQUIRED
         date_column: Column to filter on (default: trip_start_timestamp)
 
     Returns:
         profile_results: Detailed profiling metrics for time-filtered data
         profile_scan_id: ID of created scan
         metrics_summary: High-level summary metrics
-        
+
     Raises:
         ValueError: If start_date or end_date not provided (cost protection)
     """
@@ -60,30 +60,37 @@ def run_profile_scan(
 
     # Calculate time range duration
     from datetime import datetime
-    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
     days = (end_dt - start_dt).days + 1
 
     print(f"🔍 Starting PROTECTED profile scan: {profile_scan_id}")
     print(f"📊 Original table: {bq_table}")
     print(f"🏗️ Stage: {pipeline_stage}")
-    print(f"📅 Filtering: {start_date} to {end_date} ({days} day{'s' if days != 1 else ''})")
+    print(
+        f"📅 Filtering: {start_date} to {end_date} ({days} day{'s' if days != 1 else ''})"
+    )
 
     # Initialize clients first for cost estimation
     dataplex_client = dataplex_v1.DataScanServiceClient()
     bq_client = bigquery_Client(project=project_id)
-    
+
     # Show cost estimate for full table scan (what would happen without protection)
     if not start_date or not end_date:
-        print(f"💰 Estimating cost of unprotected full table scan...")
+        print("💰 Estimating cost of unprotected full table scan...")
         try:
             full_scan_query = f"SELECT * FROM `{bq_table}`"
-            bytes_processed, estimated_cost = bq_client.estimate_query_cost(full_scan_query)
+            bytes_processed, estimated_cost = bq_client.estimate_query_cost(
+                full_scan_query
+            )
             gb_processed = bytes_processed / (1024**3)
-            print(f"⚠️  UNPROTECTED SCAN COST: €{estimated_cost:.2f} ({gb_processed:.2f} GB)")
+            print(
+                f"⚠️  UNPROTECTED SCAN COST: €{estimated_cost:.2f} ({gb_processed:.2f} GB)"
+            )
         except Exception as e:
             print(f"⚠️  Could not estimate full scan cost: {e}")
-        
+
         # COST PROTECTION: Enforce time filtering
         raise ValueError("Time filtering required - provide start_date and end_date")
 
@@ -93,13 +100,13 @@ def run_profile_scan(
         start_date=start_date,
         end_date=end_date,
         date_column=date_column,
-        project_id=project_id
+        project_id=project_id,
     ) as filtered_view_name:
-        
+
         print(f"🔒 Using filtered view: {filtered_view_name}")
-        
+
         # Parse filtered view reference for Dataplex
-        project, dataset, table = filtered_view_name.replace('`', '').split(".")
+        project, dataset, table = filtered_view_name.replace("`", "").split(".")
         resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
 
         # Create Dataplex profile scan with export configuration
@@ -115,13 +122,10 @@ def run_profile_scan(
             bigquery_export=export_config
         )
 
-        profile_spec = dataplex_v1.DataProfileSpec(
-            post_scan_actions=post_scan_actions
-        )
+        profile_spec = dataplex_v1.DataProfileSpec(post_scan_actions=post_scan_actions)
 
         profile_scan = dataplex_v1.DataScan(
-            data=data_source,
-            data_profile_spec=profile_spec
+            data=data_source, data_profile_spec=profile_spec
         )
 
         scan_full_name = f"{parent}/dataScans/{profile_scan_id}"
@@ -141,13 +145,17 @@ def run_profile_scan(
         # Verify view has data before scanning
         print("🔍 Verifying view has data before Dataplex scan...")
         try:
-            test_query = f"SELECT COUNT(*) as cnt FROM `{filtered_view_name.replace('`', '')}`"
+            test_query = (
+                f"SELECT COUNT(*) as cnt FROM `{filtered_view_name.replace('`', '')}`"
+            )
             result = bq_client.query(test_query).to_dataframe()
-            row_count = result.iloc[0]['cnt']
+            row_count = result.iloc[0]["cnt"]
             print(f"✅ View contains {row_count:,} rows - ready for Dataplex")
 
             if row_count == 0:
-                raise Exception(f"View {filtered_view_name} is empty - no data to profile")
+                raise Exception(
+                    f"View {filtered_view_name} is empty - no data to profile"
+                )
         except Exception as e:
             print(f"❌ Cannot access view for verification: {e}")
             raise Exception(f"View verification failed: {e}")
@@ -179,7 +187,9 @@ def run_profile_scan(
             if not latest_job:
                 time.sleep(10)
                 if elapsed > max_wait_minutes * 60:
-                    raise Exception(f"Timeout: No job started after {max_wait_minutes} minutes")
+                    raise Exception(
+                        f"Timeout: No job started after {max_wait_minutes} minutes"
+                    )
                 continue
 
             job_state = latest_job.state.name
@@ -195,7 +205,7 @@ def run_profile_scan(
                     print(f"✅ Analysis complete ({elapsed:.0f}s total)")
                     break
                 elif job_state == "FAILED":
-                    error_msg = getattr(latest_job, 'message', 'Unknown error')
+                    error_msg = getattr(latest_job, "message", "Unknown error")
                     print(f"❌ Analysis failed: {error_msg}")
                     raise Exception(f"Dataplex scan failed: {error_msg}")
                 last_state = job_state
@@ -203,7 +213,9 @@ def run_profile_scan(
             # Health check updates during RUNNING state every 30s from when RUNNING started
             elif job_state == "RUNNING" and running_start_time:
                 running_elapsed = time.time() - running_start_time
-                if running_elapsed >= 30 and int(running_elapsed) % 30 < 10:  # Show once per 30s window
+                if (
+                    running_elapsed >= 30 and int(running_elapsed) % 30 < 10
+                ):  # Show once per 30s window
                     # Show processing time, not total elapsed time
                     proc_mins = int(running_elapsed // 60)
                     proc_secs = int(running_elapsed % 60)
@@ -216,7 +228,9 @@ def run_profile_scan(
             # Timeout check
             if elapsed > max_wait_minutes * 60:
                 final_state = latest_job.state.name if latest_job else "UNKNOWN"
-                raise Exception(f"Timeout after {max_wait_minutes} minutes. State: {final_state}")
+                raise Exception(
+                    f"Timeout after {max_wait_minutes} minutes. State: {final_state}"
+                )
 
             time.sleep(10)
 
@@ -257,7 +271,10 @@ def run_profile_scan(
             if results_df.empty:
                 print(f"⚠️ No results found in export table for scan {profile_scan_id}")
                 # Fall back to checking if job has direct results (for older scans)
-                if hasattr(latest_job, 'data_profile_result') and latest_job.data_profile_result:
+                if (
+                    hasattr(latest_job, "data_profile_result")
+                    and latest_job.data_profile_result
+                ):
                     print("📊 Using direct job results as fallback")
                     profile = latest_job.data_profile_result.profile
                     profile_results["table_metrics"] = {
@@ -267,14 +284,27 @@ def run_profile_scan(
                 else:
                     print("❌ No results available in export table or job response")
                     # Still return basic structure for compatibility
-                    profile_results["table_metrics"] = {"row_count": 0, "column_count": 0}
+                    profile_results["table_metrics"] = {
+                        "row_count": 0,
+                        "column_count": 0,
+                    }
             else:
-                print(f"✅ Found {len(results_df)} profile result records in export table")
+                print(
+                    f"✅ Found {len(results_df)} profile result records in export table"
+                )
 
                 # Process BigQuery export results into expected format
                 # Get unique column count and total row count
-                unique_columns = results_df['column_name'].nunique() if 'column_name' in results_df.columns else 0
-                table_row_count = results_df.iloc[0].get('job_rows_scanned', 0) if not results_df.empty else 0
+                unique_columns = (
+                    results_df["column_name"].nunique()
+                    if "column_name" in results_df.columns
+                    else 0
+                )
+                table_row_count = (
+                    results_df.iloc[0].get("job_rows_scanned", 0)
+                    if not results_df.empty
+                    else 0
+                )
 
                 profile_results["table_metrics"] = {
                     "row_count": table_row_count,
@@ -283,27 +313,31 @@ def run_profile_scan(
 
                 # Process column-level metrics from export table
                 for _, row in results_df.iterrows():
-                    column_name = row.get('column_name', 'unknown')
+                    column_name = row.get("column_name", "unknown")
 
                     column_metrics = {
                         "name": column_name,
-                        "type": row.get('column_data_type', 'unknown'),
-                        "null_ratio": row.get('null_count', 0) / max(row.get('non_null_count', 1), 1),
-                        "distinct_ratio": row.get('distinct_count', 0) / max(table_row_count, 1),
+                        "type": row.get("column_data_type", "unknown"),
+                        "null_ratio": row.get("null_count", 0)
+                        / max(row.get("non_null_count", 1), 1),
+                        "distinct_ratio": row.get("distinct_count", 0)
+                        / max(table_row_count, 1),
                     }
 
                     # Add numeric statistics if available
-                    if row.get('min_value') is not None:
-                        column_metrics.update({
-                            "min_value": row.get('min_value'),
-                            "max_value": row.get('max_value'),
-                            "mean_value": row.get('avg_value'),
-                            "stddev_value": row.get('std_dev_value'),
-                        })
+                    if row.get("min_value") is not None:
+                        column_metrics.update(
+                            {
+                                "min_value": row.get("min_value"),
+                                "max_value": row.get("max_value"),
+                                "mean_value": row.get("avg_value"),
+                                "stddev_value": row.get("std_dev_value"),
+                            }
+                        )
 
                     # Add unique count for categorical data
-                    if row.get('distinct_count') is not None:
-                        column_metrics["unique_count"] = row.get('distinct_count')
+                    if row.get("distinct_count") is not None:
+                        column_metrics["unique_count"] = row.get("distinct_count")
 
                     profile_results["column_metrics"][column_name] = column_metrics
 
@@ -325,7 +359,7 @@ def run_profile_scan(
             "time_filtered": True,
             "filter_start_date": start_date,
             "filter_end_date": end_date,
-            "filter_column": date_column
+            "filter_column": date_column,
         }
 
         print("✅ PROTECTED profile scan completed successfully!")

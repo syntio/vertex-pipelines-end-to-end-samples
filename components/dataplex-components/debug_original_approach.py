@@ -4,20 +4,27 @@ import os
 import time
 
 # Set environment
-os.environ['PROJECT_ID'] = 'syntio-ai-ops'
+os.environ["PROJECT_ID"] = "syntio-ai-ops"
+
 
 # Mock the KFP component
 class MockComponent:
     def __init__(self, **kwargs):
         pass
+
     def __call__(self, func):
         func.python_func = func
         return func
 
+
 import sys
-sys.modules['kfp'] = type('MockModule', (), {'dsl': type('MockDSL', (), {'component': MockComponent})})()
+
+sys.modules["kfp"] = type(
+    "MockModule", (), {"dsl": type("MockDSL", (), {"component": MockComponent})}
+)()
 
 from google.cloud import dataplex_v1
+
 
 def test_original_dataplex_approach():
     """Test Dataplex exactly like the original code - no time filtering, direct table access"""
@@ -90,17 +97,22 @@ def test_original_dataplex_approach():
             if job_state == "SUCCEEDED":
                 print("✅ Original approach scan completed!")
 
-                if hasattr(latest_job, 'data_profile_result') and latest_job.data_profile_result:
+                if (
+                    hasattr(latest_job, "data_profile_result")
+                    and latest_job.data_profile_result
+                ):
                     profile = latest_job.data_profile_result.profile
                     print(f"🎯 SUCCESS! Original approach works!")
                     print(f"📊 Row count: {profile.row_count:,}")
-                    print(f"📋 Field count: {len(profile.fields) if profile.fields else 0}")
+                    print(
+                        f"📋 Field count: {len(profile.fields) if profile.fields else 0}"
+                    )
                 else:
                     print(f"❌ Even original approach fails - no data_profile_result")
                     print(f"   This suggests a deeper Dataplex service issue")
                 break
             elif job_state == "FAILED":
-                error_msg = getattr(latest_job, 'message', 'Unknown error')
+                error_msg = getattr(latest_job, "message", "Unknown error")
                 print(f"❌ Original approach failed: {error_msg}")
                 break
             elif job_state in ["RUNNING", "PENDING", "ACTIVE"]:
@@ -117,7 +129,9 @@ def test_original_dataplex_approach():
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     test_original_dataplex_approach()

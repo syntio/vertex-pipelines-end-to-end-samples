@@ -6,16 +6,19 @@ from kfp.dsl import component
         "europe-west2-docker.pkg.dev/syntio-ai-ops/"
         "ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest"
     ),
-    packages_to_install=["google-cloud-dataplex>=1.0.0", "google-cloud-bigquery>=3.25.0"]
+    packages_to_install=[
+        "google-cloud-dataplex>=1.0.0",
+        "google-cloud-bigquery>=3.25.0",
+    ],
 )
 def run_scan(
     project_id: str = None,
     location: str = None,
     bq_table: str = None,
     dq_scan_id: str = None,
-    # TIME FILTERING PARAMETERS (REQUIRED) 
+    # TIME FILTERING PARAMETERS (REQUIRED)
     start_date: str = "",  # YYYY-MM-DD format (MANDATORY)
-    end_date: str = "",    # YYYY-MM-DD format (MANDATORY)
+    end_date: str = "",  # YYYY-MM-DD format (MANDATORY)
     date_column: str = "trip_start_timestamp",  # Column to filter on
 ) -> None:
     from google.cloud import dataplex_v1

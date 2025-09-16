@@ -15,7 +15,7 @@ import os
 def extract_pipeline():
     project_id = os.environ.get("PROJECT_ID")
     location = os.environ.get("VERTEX_LOCATION", "europe-west1")
-    
+
     query_task = bq_query_to_table(
         query=(
             f"SELECT * FROM `{project_id}.chicago_taxi_trips.taxi_trips`"
@@ -56,7 +56,9 @@ def extract_pipeline():
 if __name__ == "__main__":
     project_id = os.environ.get("PROJECT_ID")
     location = os.environ.get("VERTEX_LOCATION", "europe-west1")
-    pipeline_root = os.environ.get("VERTEX_PIPELINE_ROOT", f"gs://{project_id}-pipeline-root")
+    pipeline_root = os.environ.get(
+        "VERTEX_PIPELINE_ROOT", f"gs://{project_id}-pipeline-root"
+    )
 
     pipeline_filename = "extract_export_check_pipeline.json"
     job_id = f"extract-chicago-taxi-data-job-{datetime.now().strftime('%Y%m%d-%H%M%S')}"

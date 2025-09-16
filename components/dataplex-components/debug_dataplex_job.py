@@ -4,7 +4,8 @@ import os
 import time
 
 # Set environment
-os.environ['PROJECT_ID'] = 'syntio-ai-ops'
+os.environ["PROJECT_ID"] = "syntio-ai-ops"
+
 
 # Mock the KFP component for debugging
 class MockComponent:
@@ -15,12 +16,17 @@ class MockComponent:
         func.python_func = func
         return func
 
+
 import sys
-sys.modules['kfp'] = type('MockModule', (), {'dsl': type('MockDSL', (), {'component': MockComponent})})()
+
+sys.modules["kfp"] = type(
+    "MockModule", (), {"dsl": type("MockDSL", (), {"component": MockComponent})}
+)()
 
 # Now import our modules
 from src.dataplex_components.protected_access import protected_table_access
 from google.cloud import dataplex_v1
+
 
 def debug_dataplex_scan():
     """Debug what happens during Dataplex profiling of temporary view"""
@@ -43,13 +49,13 @@ def debug_dataplex_scan():
         start_date="2022-09-01",
         end_date="2022-09-01",
         date_column="trip_start_timestamp",
-        project_id=project_id
+        project_id=project_id,
     ) as filtered_view_name:
 
         print(f"🔒 Created filtered view: {filtered_view_name}")
 
         # Parse filtered view reference for Dataplex
-        project, dataset, table = filtered_view_name.replace('`', '').split(".")
+        project, dataset, table = filtered_view_name.replace("`", "").split(".")
         resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
 
         print(f"🔗 Dataplex resource URI: {resource_uri}")
@@ -95,7 +101,7 @@ def debug_dataplex_scan():
             print(f"📄 Job {job_count}: {job.name}")
             print(f"   State: {job.state.name}")
             print(f"   Start: {job.start_time}")
-            if hasattr(job, 'end_time') and job.end_time:
+            if hasattr(job, "end_time") and job.end_time:
                 print(f"   End: {job.end_time}")
 
             if latest_job is None or job.start_time > latest_job.start_time:
@@ -107,7 +113,7 @@ def debug_dataplex_scan():
 
         print(f"\n🎯 Latest job state: {latest_job.state.name}")
 
-        if hasattr(latest_job, 'message') and latest_job.message:
+        if hasattr(latest_job, "message") and latest_job.message:
             print(f"📝 Job message: {latest_job.message}")
 
         if latest_job.data_profile_result:
@@ -123,7 +129,10 @@ def debug_dataplex_scan():
             print("❌ No data_profile_result found!")
             print("🔍 Checking job details...")
             print(f"   Job type: {type(latest_job)}")
-            print(f"   Available attributes: {[attr for attr in dir(latest_job) if not attr.startswith('_')]}")
+            print(
+                f"   Available attributes: {[attr for attr in dir(latest_job) if not attr.startswith('_')]}"
+            )
+
 
 if __name__ == "__main__":
     debug_dataplex_scan()
