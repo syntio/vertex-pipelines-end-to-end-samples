@@ -25,8 +25,6 @@ def store_profile_results(
         status: Storage operation status
     """
     from google.cloud import bigquery
-    import json
-    from datetime import datetime
 
     print(f"💾 Storing profile results to {project_id}.{dataset_id}.{table_id}")
 
