@@ -149,27 +149,14 @@ def run_profile_scan(
 
         print("⏳ Waiting for scan completion...")
 
-        # Smart polling with adaptive intervals and status updates
-        max_wait_minutes = 15  # Max 15 minutes wait
+        # Minimal polling - just wait for completion
+        max_wait_minutes = 15
         start_time = time.time()
-        poll_count = 0
         last_state = None
-        state_duration = 0
-
-        print("⏳ Monitoring scan progress...")
 
         latest_job = None
         while True:
-            poll_count += 1
             elapsed = time.time() - start_time
-
-            # Adaptive polling interval: faster at start, slower later
-            if elapsed < 60:  # First minute: every 5s
-                poll_interval = 5
-            elif elapsed < 300:  # Next 4 minutes: every 10s
-                poll_interval = 10
-            else:  # After 5 minutes: every 15s
-                poll_interval = 15
 
             # Get current jobs
             jobs = dataplex_client.list_data_scan_jobs(parent=scan_full_name)
@@ -179,52 +166,34 @@ def run_profile_scan(
                     latest_job = job
 
             if not latest_job:
-                print(f"⏳ [{elapsed:.0f}s] Waiting for job to start...")
-                time.sleep(poll_interval)
+                time.sleep(10)
                 if elapsed > max_wait_minutes * 60:
                     raise Exception(f"Timeout: No job started after {max_wait_minutes} minutes")
                 continue
 
             job_state = latest_job.state.name
 
-            # Track state changes and duration
+            # Only show state changes
             if job_state != last_state:
-                if last_state:
-                    print(f"🔄 State change: {last_state} → {job_state} (after {state_duration:.0f}s)")
-                else:
-                    print(f"🎬 Job started: {job_state}")
+                if job_state == "PENDING":
+                    print("⏳ Scan queued")
+                elif job_state == "RUNNING":
+                    print("⚡ Processing data")
+                elif job_state == "SUCCEEDED":
+                    print(f"✅ Completed ({elapsed:.0f}s)")
+                    break
+                elif job_state == "FAILED":
+                    error_msg = getattr(latest_job, 'message', 'Unknown error')
+                    print(f"❌ Failed: {error_msg}")
+                    raise Exception(f"Dataplex scan failed: {error_msg}")
                 last_state = job_state
-                state_duration = 0
-            else:
-                state_duration += poll_interval
-
-            # Status with meaningful progress indicators
-            if job_state == "SUCCEEDED":
-                print(f"✅ Scan completed successfully! (Total time: {elapsed:.0f}s)")
-                break
-            elif job_state == "FAILED":
-                error_msg = getattr(latest_job, 'message', 'Unknown error')
-                print(f"❌ Scan failed after {elapsed:.0f}s: {error_msg}")
-                raise Exception(f"Dataplex scan failed: {error_msg}")
-            elif job_state == "RUNNING":
-                # Only show progress every 30 seconds to reduce spam
-                if state_duration == 0 or int(state_duration) % 30 == 0:
-                    progress_bar = "█" * min(int(elapsed / 10), 10) + "░" * (10 - min(int(elapsed / 10), 10))
-                    print(f"⚡ Analyzing data schema and statistics [{progress_bar}] {elapsed:.0f}s")
-            elif job_state == "PENDING":
-                # Only show pending updates every 10 seconds
-                if state_duration == 0 or int(state_duration) % 10 == 0:
-                    print(f"⏳ Waiting in queue... ({elapsed:.0f}s)")
-            else:
-                print(f"🔍 Status: {job_state} ({elapsed:.0f}s elapsed)")
 
             # Timeout check
             if elapsed > max_wait_minutes * 60:
-                print(f"⏰ Timeout after {max_wait_minutes} minutes")
                 final_state = latest_job.state.name if latest_job else "UNKNOWN"
-                raise Exception(f"Dataplex scan timeout. Final state: {final_state}")
+                raise Exception(f"Timeout after {max_wait_minutes} minutes. State: {final_state}")
 
-            time.sleep(poll_interval)
+            time.sleep(10)
 
         if not latest_job:
             raise Exception("No scan job found after polling completed")
