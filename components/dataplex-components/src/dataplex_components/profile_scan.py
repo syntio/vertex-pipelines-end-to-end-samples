@@ -156,7 +156,7 @@ def run_profile_scan(
         print("⏳ Waiting for scan completion...")
 
         # Health check style polling with progress updates
-        max_wait_minutes = 15
+        max_wait_minutes = 60  # 1 hour timeout
         start_time = time.time()
         last_state = None
         last_health_check = 0
@@ -196,8 +196,8 @@ def run_profile_scan(
                 last_state = job_state
                 last_health_check = elapsed
 
-            # Health check updates during long RUNNING state
-            elif job_state == "RUNNING" and elapsed - last_health_check >= 45:
+            # Health check updates during long RUNNING state every 30s
+            elif job_state == "RUNNING" and elapsed - last_health_check >= 30:
                 mins = int(elapsed // 60)
                 secs = int(elapsed % 60)
                 if mins > 0:
