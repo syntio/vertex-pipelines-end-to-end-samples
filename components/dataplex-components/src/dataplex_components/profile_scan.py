@@ -92,12 +92,26 @@ def run_profile_scan(
         project, dataset, table = filtered_view_name.replace('`', '').split(".")
         resource_uri = f"//bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}"
 
-        # Create Dataplex profile scan
+        # Create Dataplex profile scan with export configuration
         parent = f"projects/{project_id}/locations/{location}"
         data_source = dataplex_v1.DataSource(resource=resource_uri)
 
+        # Configure export to BigQuery table
+        export_config = dataplex_v1.DataProfileSpec.PostScanActions.BigQueryExport(
+            results_table=f"projects/{project_id}/datasets/chicago_taxi_trips/tables/profile_scan_results"
+        )
+
+        post_scan_actions = dataplex_v1.DataProfileSpec.PostScanActions(
+            bigquery_export=export_config
+        )
+
+        profile_spec = dataplex_v1.DataProfileSpec(
+            post_scan_actions=post_scan_actions
+        )
+
         profile_scan = dataplex_v1.DataScan(
-            data=data_source, data_profile_spec=dataplex_v1.DataProfileSpec()
+            data=data_source,
+            data_profile_spec=profile_spec
         )
 
         scan_full_name = f"{parent}/dataScans/{profile_scan_id}"
@@ -114,23 +128,73 @@ def run_profile_scan(
             operation.result()  # Wait for creation
             print(f"✅ Created profile scan: {profile_scan_id}")
 
+        # Verify view has data before scanning
+        print("🔍 Verifying view has data before Dataplex scan...")
+        try:
+            test_query = f"SELECT COUNT(*) as cnt FROM `{filtered_view_name.replace('`', '')}`"
+            result = bq_client.query(test_query).to_dataframe()
+            row_count = result.iloc[0]['cnt']
+            print(f"✅ View contains {row_count:,} rows - ready for Dataplex")
+
+            if row_count == 0:
+                raise Exception(f"View {filtered_view_name} is empty - no data to profile")
+        except Exception as e:
+            print(f"❌ Cannot access view for verification: {e}")
+            raise Exception(f"View verification failed: {e}")
+
         # Run the profile scan
         print("🚀 Running profile scan...")
         run_request = dataplex_v1.RunDataScanRequest(name=scan_full_name)
         run_response = dataplex_client.run_data_scan(request=run_request)
 
         print("⏳ Waiting for scan completion...")
-        time.sleep(60)  # Wait for scan to complete
 
-        # Get scan results
-        jobs = dataplex_client.list_data_scan_jobs(parent=scan_full_name)
+        # Poll for completion - keep view alive until scan is done
+        max_wait_minutes = 10  # Max 10 minutes wait
+        poll_interval = 10  # Check every 10 seconds
+        max_polls = (max_wait_minutes * 60) // poll_interval
+
         latest_job = None
-        for job in jobs:
-            if latest_job is None or job.start_time > latest_job.start_time:
-                latest_job = job
+        for poll_count in range(max_polls):
+            print(f"🔍 Polling scan status ({poll_count + 1}/{max_polls})...")
+
+            # Get current jobs
+            jobs = dataplex_client.list_data_scan_jobs(parent=scan_full_name)
+            latest_job = None
+            for job in jobs:
+                if latest_job is None or job.start_time > latest_job.start_time:
+                    latest_job = job
+
+            if not latest_job:
+                print("⚠️ No scan job found yet, waiting...")
+                time.sleep(poll_interval)
+                continue
+
+            job_state = latest_job.state.name
+            print(f"📋 Job state: {job_state}")
+
+            if job_state == "SUCCEEDED":
+                print("✅ Scan completed successfully!")
+                break
+            elif job_state == "FAILED":
+                error_msg = getattr(latest_job, 'message', 'Unknown error')
+                print(f"❌ Scan failed: {error_msg}")
+                raise Exception(f"Dataplex scan failed: {error_msg}")
+            elif job_state in ["RUNNING", "PENDING", "ACTIVE"]:
+                print(f"⏳ Scan still {job_state.lower()}, waiting {poll_interval}s...")
+                time.sleep(poll_interval)
+                continue
+            else:
+                print(f"⚠️ Unknown job state: {job_state}, waiting...")
+                time.sleep(poll_interval)
+                continue
+        else:
+            # Loop completed without break - timeout
+            final_state = latest_job.state.name if latest_job else "UNKNOWN"
+            raise Exception(f"Dataplex scan timeout after {max_wait_minutes} minutes. Final state: {final_state}")
 
         if not latest_job:
-            raise Exception("No scan job found!")
+            raise Exception("No scan job found after polling completed")
 
         print("📈 Processing scan results...")
 
@@ -148,86 +212,80 @@ def run_profile_scan(
             "column_metrics": {},
         }
 
-        if latest_job.data_profile_result:
-            profile = latest_job.data_profile_result.profile
+        # Read profile results from BigQuery export table
+        print("📊 Reading profile results from BigQuery export table...")
+        export_table = f"projects/{project_id}/datasets/chicago_taxi_trips/tables/profile_scan_results"
 
-            # Table-level metrics
-            profile_results["table_metrics"] = {
-                "row_count": profile.row_count,
-                "column_count": len(profile.fields) if profile.fields else 0,
-            }
+        try:
+            # Query the most recent results for this scan
+            results_query = f"""
+            SELECT * FROM `{export_table}`
+            WHERE data_profile_scan.data_scan_id = '{profile_scan_id}'
+            ORDER BY job_start_time DESC
+            LIMIT 1000
+            """
 
-            # Column-level metrics
-            if profile.fields:
-                for field in profile.fields:
-                    column_name = field.name
+            results_df = bq_client.query(results_query).to_dataframe()
+
+            if results_df.empty:
+                print(f"⚠️ No results found in export table for scan {profile_scan_id}")
+                # Fall back to checking if job has direct results (for older scans)
+                if hasattr(latest_job, 'data_profile_result') and latest_job.data_profile_result:
+                    print("📊 Using direct job results as fallback")
+                    profile = latest_job.data_profile_result.profile
+                    profile_results["table_metrics"] = {
+                        "row_count": profile.row_count,
+                        "column_count": len(profile.fields) if profile.fields else 0,
+                    }
+                else:
+                    print("❌ No results available in export table or job response")
+                    # Still return basic structure for compatibility
+                    profile_results["table_metrics"] = {"row_count": 0, "column_count": 0}
+            else:
+                print(f"✅ Found {len(results_df)} profile result records in export table")
+
+                # Process BigQuery export results into expected format
+                # Get unique column count and total row count
+                unique_columns = results_df['column_name'].nunique() if 'column_name' in results_df.columns else 0
+                table_row_count = results_df.iloc[0].get('source_table_row_count', 0) if not results_df.empty else 0
+
+                profile_results["table_metrics"] = {
+                    "row_count": table_row_count,
+                    "column_count": unique_columns,
+                }
+
+                # Process column-level metrics from export table
+                for _, row in results_df.iterrows():
+                    column_name = row.get('column_name', 'unknown')
+
                     column_metrics = {
                         "name": column_name,
-                        "type": field.type_,
-                        "mode": field.mode,
+                        "type": row.get('column_data_type', 'unknown'),
+                        "null_ratio": row.get('null_count', 0) / max(row.get('non_null_count', 1), 1),
+                        "distinct_ratio": row.get('distinct_count', 0) / max(table_row_count, 1),
                     }
 
-                    if field.profile:
-                        prof = field.profile
+                    # Add numeric statistics if available
+                    if row.get('min_value') is not None:
+                        column_metrics.update({
+                            "min_value": row.get('min_value'),
+                            "max_value": row.get('max_value'),
+                            "mean_value": row.get('avg_value'),
+                            "stddev_value": row.get('std_dev_value'),
+                        })
 
-                        # Null statistics
-                        column_metrics.update(
-                            {
-                                "null_ratio": prof.null_ratio,
-                                "distinct_ratio": prof.distinct_ratio,
-                            }
-                        )
-
-                        # Numeric statistics
-                        if hasattr(prof, "double_profile") and prof.double_profile:
-                            dp = prof.double_profile
-                            column_metrics.update(
-                                {
-                                    "min_value": dp.min,
-                                    "max_value": dp.max,
-                                    "mean_value": dp.mean,
-                                    "stddev_value": dp.standard_deviation,
-                                    "percentiles": {
-                                        "p5": dp.quartiles[0] if dp.quartiles else None,
-                                        "p25": (
-                                            dp.quartiles[1]
-                                            if len(dp.quartiles) > 1
-                                            else None
-                                        ),
-                                        "p50": (
-                                            dp.quartiles[2]
-                                            if len(dp.quartiles) > 2
-                                            else None
-                                        ),
-                                        "p75": (
-                                            dp.quartiles[3]
-                                            if len(dp.quartiles) > 3
-                                            else None
-                                        ),
-                                        "p95": (
-                                            dp.quartiles[4]
-                                            if len(dp.quartiles) > 4
-                                            else None
-                                        ),
-                                    },
-                                }
-                            )
-
-                        # String/Categorical statistics
-                        if hasattr(prof, "string_profile") and prof.string_profile:
-                            sp = prof.string_profile
-                            top_values = []
-                            if sp.top_n_values:
-                                for tv in sp.top_n_values:
-                                    top_values.append(
-                                        {"value": tv.value, "count": tv.count}
-                                    )
-
-                            column_metrics.update(
-                                {"unique_count": sp.unique_count, "top_values": top_values}
-                            )
+                    # Add unique count for categorical data
+                    if row.get('distinct_count') is not None:
+                        column_metrics["unique_count"] = row.get('distinct_count')
 
                     profile_results["column_metrics"][column_name] = column_metrics
+
+        except Exception as e:
+            print(f"⚠️ Error reading from export table: {e}")
+            print("💡 This might be the first scan - export table may not exist yet")
+
+            # Create basic structure for now
+            profile_results["table_metrics"] = {"row_count": 0, "column_count": 0}
 
         # Generate metrics summary with time filtering info
         metrics_summary = {
