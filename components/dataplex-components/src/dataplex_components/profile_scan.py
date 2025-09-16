@@ -159,7 +159,7 @@ def run_profile_scan(
         max_wait_minutes = 60  # 1 hour timeout
         start_time = time.time()
         last_state = None
-        last_health_check = 0
+        running_start_time = None
 
         latest_job = None
         while True:
@@ -186,6 +186,7 @@ def run_profile_scan(
                     print("⏳ Queued for processing")
                 elif job_state == "RUNNING":
                     print("⚡ Analyzing schema and computing statistics")
+                    running_start_time = time.time()  # Track when RUNNING started
                 elif job_state == "SUCCEEDED":
                     print(f"✅ Analysis complete ({elapsed:.0f}s total)")
                     break
@@ -194,19 +195,18 @@ def run_profile_scan(
                     print(f"❌ Analysis failed: {error_msg}")
                     raise Exception(f"Dataplex scan failed: {error_msg}")
                 last_state = job_state
-                if job_state == "RUNNING":
-                    last_health_check = elapsed  # Start counting from when RUNNING starts
 
-            # Health check updates during long RUNNING state every 30s
-            elif job_state == "RUNNING" and elapsed - last_health_check >= 30:
-                mins = int(elapsed // 60)
-                secs = int(elapsed % 60)
-                if mins > 0:
-                    time_str = f"{mins}m {secs}s"
-                else:
-                    time_str = f"{secs}s"
-                print(f"📊 Still processing... ({time_str} elapsed)")
-                last_health_check = elapsed
+            # Health check updates during RUNNING state every 30s from when RUNNING started
+            elif job_state == "RUNNING" and running_start_time:
+                running_elapsed = time.time() - running_start_time
+                if running_elapsed >= 30 and int(running_elapsed) % 30 < 10:  # Show once per 30s window
+                    mins = int(elapsed // 60)
+                    secs = int(elapsed % 60)
+                    if mins > 0:
+                        time_str = f"{mins}m {secs}s"
+                    else:
+                        time_str = f"{secs}s"
+                    print(f"📊 Still processing... ({time_str} elapsed)")
 
             # Timeout check
             if elapsed > max_wait_minutes * 60:
