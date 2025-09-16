@@ -13,6 +13,18 @@ Implementation of mandatory time filtering protection for BigQuery operations, p
 - Automatic temporary view creation with date filters
 - Cost estimation and automatic cleanup
 
+### Dataplex Profile Scans
+- BigQuery export configuration for results storage
+- Export table: `syntio-ai-ops.chicago_taxi_trips.profile_scan_results`
+- Synchronous polling with 30s health checks, 1hr timeout
+- Automatic result parsing from export table
+
+### Profile Comparison System
+- `compare_profiles()` - Compare current vs historical profiles
+- `detect_significant_changes()` - Flag >10% deviations
+- Automatic HALT/CONTINUE pipeline decisions
+- Storage in `profile_comparisons` table
+
 ### Cost-Aware BigQuery Client
 - Drop-in replacement for standard BigQuery client
 - Interactive cost approval for expensive queries

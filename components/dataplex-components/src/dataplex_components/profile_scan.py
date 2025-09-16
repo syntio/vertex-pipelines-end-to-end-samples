@@ -54,6 +54,10 @@ def run_profile_scan(
     from .protected_access import protected_table_access
     from .cost_aware_client import Client as bigquery_Client
 
+    # COST PROTECTION: Enforce time filtering first
+    if not start_date or not end_date:
+        raise ValueError("Time filtering required - provide start_date and end_date")
+
     # Calculate time range duration
     from datetime import datetime
     start_dt = datetime.strptime(start_date, '%Y-%m-%d')

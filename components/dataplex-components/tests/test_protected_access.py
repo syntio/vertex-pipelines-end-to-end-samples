@@ -31,7 +31,7 @@ def test_protected_access_invalid_date_format():
 def test_protected_access_invalid_date_range():
     """Test that start_date >= end_date raises ValueError"""
     
-    with pytest.raises(ValueError, match="start_date must be before end_date"):
+    with pytest.raises(ValueError, match="start_date must be before or equal to end_date"):
         with protected_table_access(
             bq_table="test-project.dataset.table",
             start_date="2022-09-30",
