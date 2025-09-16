@@ -194,7 +194,8 @@ def run_profile_scan(
                     print(f"❌ Analysis failed: {error_msg}")
                     raise Exception(f"Dataplex scan failed: {error_msg}")
                 last_state = job_state
-                last_health_check = elapsed
+                if job_state == "RUNNING":
+                    last_health_check = elapsed  # Start counting from when RUNNING starts
 
             # Health check updates during long RUNNING state every 30s
             elif job_state == "RUNNING" and elapsed - last_health_check >= 30:
