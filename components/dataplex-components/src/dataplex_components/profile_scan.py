@@ -198,7 +198,7 @@ def run_profile_scan(
             else:
                 state_duration += poll_interval
 
-            # Status with progress indicators
+            # Status with meaningful progress indicators
             if job_state == "SUCCEEDED":
                 print(f"✅ Scan completed successfully! (Total time: {elapsed:.0f}s)")
                 break
@@ -207,11 +207,14 @@ def run_profile_scan(
                 print(f"❌ Scan failed after {elapsed:.0f}s: {error_msg}")
                 raise Exception(f"Dataplex scan failed: {error_msg}")
             elif job_state == "RUNNING":
-                progress_dots = "." * ((poll_count % 3) + 1)
-                print(f"⚡ Processing data{progress_dots} ({elapsed:.0f}s elapsed, ~{19237} rows)")
+                # Only show progress every 30 seconds to reduce spam
+                if state_duration == 0 or int(state_duration) % 30 == 0:
+                    progress_bar = "█" * min(int(elapsed / 10), 10) + "░" * (10 - min(int(elapsed / 10), 10))
+                    print(f"⚡ Analyzing data schema and statistics [{progress_bar}] {elapsed:.0f}s")
             elif job_state == "PENDING":
-                spinner = ['⏳', '⌛'][poll_count % 2]
-                print(f"{spinner} Queued for processing ({elapsed:.0f}s waiting)")
+                # Only show pending updates every 10 seconds
+                if state_duration == 0 or int(state_duration) % 10 == 0:
+                    print(f"⏳ Waiting in queue... ({elapsed:.0f}s)")
             else:
                 print(f"🔍 Status: {job_state} ({elapsed:.0f}s elapsed)")
 

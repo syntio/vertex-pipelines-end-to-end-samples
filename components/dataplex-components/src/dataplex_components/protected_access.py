@@ -103,7 +103,18 @@ def protected_table_access(
         cost_reduction = ((total_rows - filtered_rows) / total_rows * 100) if total_rows > 0 else 0
         cost_savings = full_cost - filtered_cost
         
-        print(f"💰 Cost estimate - Full scan: €{full_cost:.2f} → Filtered: €{filtered_cost:.2f} (saves €{cost_savings:.2f})")
+        # Better cost precision - show meaningful decimals
+        if filtered_cost < 0.01:
+            filtered_display = f"€{filtered_cost:.4f}" if filtered_cost > 0 else "€0.0000"
+        else:
+            filtered_display = f"€{filtered_cost:.2f}"
+
+        if cost_savings < 0.01:
+            savings_display = f"€{cost_savings:.4f}" if cost_savings > 0 else "€0.0000"
+        else:
+            savings_display = f"€{cost_savings:.2f}"
+
+        print(f"💰 Cost estimate - Full scan: €{full_cost:.2f} → Filtered: {filtered_display} (saves {savings_display})")
         print(f"📊 Row reduction: {cost_reduction:.1f}% ({filtered_rows:,} vs {total_rows:,} rows)")
         
     except Exception as e:
