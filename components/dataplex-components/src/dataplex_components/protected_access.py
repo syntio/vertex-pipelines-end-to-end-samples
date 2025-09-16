@@ -86,8 +86,8 @@ def protected_table_access(
 
         # Estimate filtered row count (rough approximation)
         filtered_query = f"""
-        SELECT COUNT(*) as filtered_rows 
-        FROM `{bq_table}` 
+        SELECT COUNT(*) as filtered_rows
+        FROM `{bq_table}`
         WHERE DATE({date_column}) BETWEEN '{start_date}' AND '{end_date}'
         """
         filtered_rows = (
@@ -127,7 +127,7 @@ def protected_table_access(
     # Create temporary filtered view
     create_view_sql = f"""
     CREATE OR REPLACE VIEW `{full_view_name}` AS
-    SELECT * 
+    SELECT *
     FROM `{bq_table}`
     WHERE DATE({date_column}) BETWEEN '{start_date}' AND '{end_date}'
     """

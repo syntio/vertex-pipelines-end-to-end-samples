@@ -70,14 +70,14 @@ class CostAwareBigQueryClient:
 
         gb_processed = bytes_processed / (1024**3)
 
-        print(f"\n⚠️  EXPENSIVE QUERY DETECTED:")
+        print("\n⚠️  EXPENSIVE QUERY DETECTED:")
         print(f"💰 Estimated cost: €{estimated_cost:.2f}")
         print(f"📊 Data to process: {gb_processed:.2f} GB")
         print(f"🔍 Query preview: {query[:200]}{'...' if len(query) > 200 else ''}")
-        print(f"\n💡 Consider:")
-        print(f"   • Adding WHERE clauses with date filtering")
-        print(f"   • Using LIMIT to reduce data processed")
-        print(f"   • Breaking query into smaller chunks")
+        print("\n💡 Consider:")
+        print("   • Adding WHERE clauses with date filtering")
+        print("   • Using LIMIT to reduce data processed")
+        print("   • Breaking query into smaller chunks")
 
         while True:
             try:
@@ -96,7 +96,7 @@ class CostAwareBigQueryClient:
                     print("❌ Query cancelled by user")
                     return False
                 elif response in ["show", "s"]:
-                    print(f"\n--- FULL QUERY ---")
+                    print("\n--- FULL QUERY ---")
                     print(query)
                     print("--- END QUERY ---\n")
                     continue
