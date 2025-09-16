@@ -54,10 +54,16 @@ def run_profile_scan(
     from .protected_access import protected_table_access
     from .cost_aware_client import Client as bigquery_Client
 
+    # Calculate time range duration
+    from datetime import datetime
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    days = (end_dt - start_dt).days + 1
+
     print(f"🔍 Starting PROTECTED profile scan: {profile_scan_id}")
     print(f"📊 Original table: {bq_table}")
     print(f"🏗️ Stage: {pipeline_stage}")
-    print(f"📅 Time range: {start_date} to {end_date}")
+    print(f"📅 Filtering: {start_date} to {end_date} ({days} day{'s' if days != 1 else ''})")
 
     # Initialize clients first for cost estimation
     dataplex_client = dataplex_v1.DataScanServiceClient()
@@ -149,10 +155,11 @@ def run_profile_scan(
 
         print("⏳ Waiting for scan completion...")
 
-        # Minimal polling - just wait for completion
+        # Health check style polling with progress updates
         max_wait_minutes = 15
         start_time = time.time()
         last_state = None
+        last_health_check = 0
 
         latest_job = None
         while True:
@@ -173,20 +180,32 @@ def run_profile_scan(
 
             job_state = latest_job.state.name
 
-            # Only show state changes
+            # Show state changes immediately
             if job_state != last_state:
                 if job_state == "PENDING":
-                    print("⏳ Scan queued")
+                    print("⏳ Queued for processing")
                 elif job_state == "RUNNING":
-                    print("⚡ Processing data")
+                    print("⚡ Analyzing schema and computing statistics")
                 elif job_state == "SUCCEEDED":
-                    print(f"✅ Completed ({elapsed:.0f}s)")
+                    print(f"✅ Analysis complete ({elapsed:.0f}s total)")
                     break
                 elif job_state == "FAILED":
                     error_msg = getattr(latest_job, 'message', 'Unknown error')
-                    print(f"❌ Failed: {error_msg}")
+                    print(f"❌ Analysis failed: {error_msg}")
                     raise Exception(f"Dataplex scan failed: {error_msg}")
                 last_state = job_state
+                last_health_check = elapsed
+
+            # Health check updates during long RUNNING state
+            elif job_state == "RUNNING" and elapsed - last_health_check >= 45:
+                mins = int(elapsed // 60)
+                secs = int(elapsed % 60)
+                if mins > 0:
+                    time_str = f"{mins}m {secs}s"
+                else:
+                    time_str = f"{secs}s"
+                print(f"📊 Still processing... ({time_str} elapsed)")
+                last_health_check = elapsed
 
             # Timeout check
             if elapsed > max_wait_minutes * 60:

@@ -75,8 +75,7 @@ def protected_table_access(
     # Initialize cost-aware BigQuery client
     client = bigquery_Client(project=target_project)
     
-    print(f"🔒 Creating protected view: {view_name}")
-    print(f"📅 Date range: {start_date} to {end_date}")
+    print(f"🔒 Creating filtered view: {view_name}")
     print(f"🗓️ Filter column: {date_column}")
     
     # Estimate cost savings
@@ -103,11 +102,14 @@ def protected_table_access(
         row_reduction = ((total_rows - filtered_rows) / total_rows * 100) if total_rows > 0 else 0
         cost_savings = full_cost - filtered_cost
         
-        # Simplified cost display - just show savings
-        if cost_savings >= 0.01:
-            print(f"💰 Cost savings: €{cost_savings:.2f} ({row_reduction:.0f}% fewer rows)")
+        # Precise cost and row calculations
+        if filtered_cost < 0.001:
+            filtered_display = f"€{filtered_cost:.4f}" if filtered_cost > 0 else "<€0.0001"
         else:
-            print(f"💰 Cost savings: ~€{full_cost:.2f} ({row_reduction:.0f}% fewer rows)")
+            filtered_display = f"€{filtered_cost:.3f}"
+
+        print(f"💰 Cost estimate: €{full_cost:.2f} → {filtered_display} (saves €{cost_savings:.2f})")
+        print(f"📊 Processing {filtered_rows:,} of {total_rows:,} rows ({row_reduction:.2f}% reduction)")
         
     except Exception as e:
         print(f"⚠️ Could not estimate cost savings: {e}")
