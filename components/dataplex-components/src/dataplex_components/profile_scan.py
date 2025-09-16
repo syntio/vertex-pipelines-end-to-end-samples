@@ -98,7 +98,7 @@ def run_profile_scan(
 
         # Configure export to BigQuery table
         export_config = dataplex_v1.DataProfileSpec.PostScanActions.BigQueryExport(
-            results_table=f"{project_id}.chicago_taxi_trips.profile_scan_results"
+            results_table=f"projects/{project_id}/datasets/chicago_taxi_trips/tables/profile_scan_results"
         )
 
         post_scan_actions = dataplex_v1.DataProfileSpec.PostScanActions(
