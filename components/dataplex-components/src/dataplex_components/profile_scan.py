@@ -200,13 +200,14 @@ def run_profile_scan(
             elif job_state == "RUNNING" and running_start_time:
                 running_elapsed = time.time() - running_start_time
                 if running_elapsed >= 30 and int(running_elapsed) % 30 < 10:  # Show once per 30s window
-                    mins = int(elapsed // 60)
-                    secs = int(elapsed % 60)
-                    if mins > 0:
-                        time_str = f"{mins}m {secs}s"
+                    # Show processing time, not total elapsed time
+                    proc_mins = int(running_elapsed // 60)
+                    proc_secs = int(running_elapsed % 60)
+                    if proc_mins > 0:
+                        proc_time_str = f"{proc_mins}m {proc_secs}s"
                     else:
-                        time_str = f"{secs}s"
-                    print(f"📊 Still processing... ({time_str} elapsed)")
+                        proc_time_str = f"{proc_secs}s"
+                    print(f"📊 Still processing... ({proc_time_str} processing time)")
 
             # Timeout check
             if elapsed > max_wait_minutes * 60:
