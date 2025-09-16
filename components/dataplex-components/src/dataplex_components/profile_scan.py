@@ -247,7 +247,7 @@ def run_profile_scan(
                 # Process BigQuery export results into expected format
                 # Get unique column count and total row count
                 unique_columns = results_df['column_name'].nunique() if 'column_name' in results_df.columns else 0
-                table_row_count = results_df.iloc[0].get('source_table_row_count', 0) if not results_df.empty else 0
+                table_row_count = results_df.iloc[0].get('job_rows_scanned', 0) if not results_df.empty else 0
 
                 profile_results["table_metrics"] = {
                     "row_count": table_row_count,
