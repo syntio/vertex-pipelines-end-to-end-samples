@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dataplex-components"
+version = "0.0.1"
+description = "Dataplex data quality and profiling components"
+dependencies = [
+    "kfp>=2.5.0,<3.0.0",
+    "google-cloud-dataplex>=1.0.0,<2.0.0",
+    "google-cloud-bigquery>=3.25.0,<4.0.0",
+    "google-cloud-bigquery-storage>=2.0.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "db-dtypes>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "black", "ruff"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (require real GCP resources)",
+]

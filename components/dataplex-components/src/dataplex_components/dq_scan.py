@@ -1,24 +1,40 @@
-import os
 from kfp.dsl import component
 
 
 @component(
     base_image=(
-        f"europe-west2-docker.pkg.dev/{os.environ.get('PROJECT_ID')}/"
+        "europe-west2-docker.pkg.dev/syntio-ai-ops/"
         "ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest"
     ),
+    packages_to_install=[
+        "google-cloud-dataplex>=1.0.0",
+        "google-cloud-bigquery>=3.25.0",
+    ],
 )
 def run_scan(
     project_id: str = None,
     location: str = None,
     bq_table: str = None,
     dq_scan_id: str = None,
+    # TIME FILTERING PARAMETERS (REQUIRED)
+    start_date: str = "",  # YYYY-MM-DD format (MANDATORY)
+    end_date: str = "",  # YYYY-MM-DD format (MANDATORY)
+    date_column: str = "trip_start_timestamp",  # Column to filter on
 ) -> None:
-    from google.cloud import dataplex_v1, bigquery
+    from google.cloud import dataplex_v1
+    from .cost_aware_client import Client as bigquery_Client
     import time
 
+    print(f"🔍 Starting PROTECTED DQ scan: {dq_scan_id}")
+    print(f"📊 Table: {bq_table}")
+    print(f"📅 Time range: {start_date} to {end_date}")
+
+    # COST PROTECTION: Enforce time filtering
+    if not start_date or not end_date:
+        raise ValueError("Time filtering required - provide start_date and end_date")
+
     dataplex_client = dataplex_v1.DataScanServiceClient()
-    bq_client = bigquery.Client(project=project_id)
+    bq_client = bigquery_Client(project=project_id)
 
     parent = f"projects/{project_id}/locations/{location}"
     dq_scan_full_name = f"{parent}/dataScans/{dq_scan_id}"
