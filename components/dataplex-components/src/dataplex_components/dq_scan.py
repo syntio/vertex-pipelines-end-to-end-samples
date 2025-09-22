@@ -1,16 +1,17 @@
 from kfp.dsl import component
 
-
 @component(
     base_image=(
         "europe-west2-docker.pkg.dev/syntio-ai-ops/"
         "ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest"
     ),
     packages_to_install=[
-        "google-cloud-dataplex>=1.0.0",
-        "google-cloud-bigquery>=3.25.0",
+    "google-cloud-dataplex>=1.0.0",
+    "google-cloud-bigquery>=3.25.0",
+    "google-cloud-monitoring>=2.15.0",
     ],
 )
+
 def run_scan(
     project_id: str = None,
     location: str = None,
@@ -21,9 +22,24 @@ def run_scan(
     end_date: str = "",  # YYYY-MM-DD format (MANDATORY)
     date_column: str = "trip_start_timestamp",  # Column to filter on
 ) -> None:
-    from google.cloud import dataplex_v1
-    from .cost_aware_client import Client as bigquery_Client
     import time
+    from google.cloud import dataplex_v1
+    from google.cloud import monitoring_v3
+    from .cost_aware_client import Client as bigquery_Client
+
+    # 👉 helper funkcija unutra
+    def push_metric(project_id, metric_type, value, labels=None):
+        client = monitoring_v3.MetricServiceClient()
+        series = monitoring_v3.TimeSeries()
+        series.metric.type = f"custom.googleapis.com/{metric_type}"
+        if labels:
+            series.metric.labels.update(labels)
+        series.resource.type = "global"
+        point = series.points.add()
+        point.value.double_value = float(value)
+        point.interval.end_time.seconds = int(time.time())
+        project_name = f"projects/{project_id}"
+        client.create_time_series(name=project_name, time_series=[series])
 
     print(f"🔍 Starting PROTECTED DQ scan: {dq_scan_id}")
     print(f"📊 Table: {bq_table}")
@@ -255,7 +271,18 @@ def run_scan(
 
         if state == dataplex_v1.DataScanJob.State.SUCCEEDED:
             print("DQ job finished successfully ✅")
+            dq_result = job.data_quality_result
+
+            # push simple metrics
+            push_metric(project_id, "dq/rows_scanned", dq_result.rows_scanned)
+            push_metric(project_id, "dq/passed", 1.0 if dq_result.passed else 0.0)
+            push_metric(
+                project_id,
+                "dq/failing_rules",
+                len([r for r in dq_result.rules if not r.passed]),
+            )
             return
+        
         elif state in (
             dataplex_v1.DataScanJob.State.FAILED,
             dataplex_v1.DataScanJob.State.CANCELLED,
