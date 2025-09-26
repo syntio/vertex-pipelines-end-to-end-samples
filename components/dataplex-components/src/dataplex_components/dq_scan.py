@@ -1,17 +1,17 @@
 from kfp.dsl import component
 
+
 @component(
     base_image=(
         "europe-west2-docker.pkg.dev/syntio-ai-ops/"
         "ml-ops-turbo-dev-ml-pipeline-containers/ml-pipeline-base:latest"
     ),
     packages_to_install=[
-    "google-cloud-dataplex>=1.0.0",
-    "google-cloud-bigquery>=3.25.0",
-    "google-cloud-monitoring>=2.15.0",
+        "google-cloud-dataplex>=1.0.0",
+        "google-cloud-bigquery>=3.25.0",
+        "google-cloud-monitoring>=2.15.0",
     ],
 )
-
 def run_scan(
     project_id: str = None,
     location: str = None,
@@ -28,7 +28,7 @@ def run_scan(
     from google.cloud import monitoring_v3
     from .cost_aware_client import Client as bigquery_Client
     import google.cloud.logging
-    
+
     def push_metric(project_id, metric_type, value, labels=None):
         client = monitoring_v3.MetricServiceClient()
         series = monitoring_v3.TimeSeries()
@@ -46,7 +46,7 @@ def run_scan(
         project_name = f"projects/{project_id}"
         client.create_time_series(name=project_name, time_series=[series])
         time.sleep(1)
-        
+
     # COST PROTECTION: Enforce time filtering
     if not start_date or not end_date:
         raise ValueError("Time filtering required - provide start_date and end_date")
@@ -248,7 +248,7 @@ def run_scan(
         data=data_source,
         data_quality_spec=dataplex_v1.DataQualitySpec(
             rules=generated_rules,
-            row_filter=row_filter,   
+            row_filter=row_filter,
         ),
     )
 
@@ -284,39 +284,39 @@ def run_scan(
             logging_client = google.cloud.logging.Client(project=project_id)
 
             # Get the job UUID from the end of the job name
-            job_uuid = job.name.split('/')[-1]
+            job_uuid = job.name.split("/")[-1]
 
             # Build a log filter to find the correct event
             log_filter = (
                 f'resource.type="dataplex.googleapis.com/DataScan" '
                 f'jsonPayload.jobId="{job_uuid}" '
-                f'jsonPayload.dataQuality:*'  # This filters for events with the dataQuality object
+                f"jsonPayload.dataQuality:*"  # This filters for events with the dataQuality object
             )
 
             print(f"Searching for log with filter: {log_filter}")
 
             # Get the log entries that match the filter
             log_entries = list(logging_client.list_entries(filter_=log_filter))
-            
+
             if not log_entries:
                 print("No matching log entries found. Cannot retrieve results.")
                 break
-            
+
             # The first entry should be the one we need - actually first is the only one
             log_entry = log_entries[0]
-            
+
             # Extract the data quality result from the JSON payload
             try:
                 dq_event = log_entry.payload
                 dq_result = dq_event.get("dataQuality")
-                
+
                 if not dq_result:
                     print("Data quality result not found in log payload.")
                     break
-                    
+
                 print("\n--- SUCCESSFULLY EXTRACTED DQ RESULTS FROM LOGS ---")
-                overall_score = dq_result.get('score', 0)
-                total_rows = dq_result.get('rowCount', 0)
+                overall_score = dq_result.get("score", 0)
+                total_rows = dq_result.get("rowCount", 0)
                 print(f"Overall Score: {overall_score:.2f}")
                 print(f"Total rows scanned: {total_rows}")
 
@@ -325,56 +325,55 @@ def run_scan(
                     project_id=project_id,
                     metric_type="data_quality/overall_score",
                     value=overall_score,
-                    labels={"scan_id": dq_scan_id}
+                    labels={"scan_id": dq_scan_id},
                 )
                 # Total rows scanned
                 push_metric(
                     project_id=project_id,
                     metric_type="data_quality/rows_scanned",
                     value=total_rows,
-                    labels={"scan_id": dq_scan_id}
+                    labels={"scan_id": dq_scan_id},
                 )
-                
-               # 2. Iterate through dimension scores and push them
-                for dimension, score in dq_result['dimensionScore'].items():
+
+                # 2. Iterate through dimension scores and push them
+                for dimension, score in dq_result["dimensionScore"].items():
                     push_metric(
                         project_id=project_id,
                         metric_type="data_quality/dimension_score",
                         value=score,
-
-                        labels={"scan_id": dq_scan_id, "dimension": dimension}
+                        labels={"scan_id": dq_scan_id, "dimension": dimension},
                     )
                 print("Pushed all dimension scores.")
 
                 # 3. Iterate through column scores and push them
-                for column, score in dq_result['columnScore'].items():
+                for column, score in dq_result["columnScore"].items():
                     push_metric(
                         project_id=project_id,
                         metric_type="data_quality/column_score",
                         value=score,
-                        labels={"scan_id": dq_scan_id, "column": column}
+                        labels={"scan_id": dq_scan_id, "column": column},
                     )
                 print("Pushed all column scores.")
 
                 # 4. Push boolean values as 1 or 0 for easier graphing
-                for dimension, passed in dq_result['dimensionPassed'].items():
+                for dimension, passed in dq_result["dimensionPassed"].items():
                     push_metric(
                         project_id=project_id,
                         metric_type="data_quality/dimension_passed",
                         value=1.0 if passed else 0.0,
-                        labels={"scan_id": dq_scan_id, "dimension": dimension}
+                        labels={"scan_id": dq_scan_id, "dimension": dimension},
                     )
                 print("Pushed all dimension pass/fail statuses.")
 
             except Exception as e:
                 print(f"Failed to parse log entry: {e}")
-            
+
             break
-            
+
         elif state in (
             dataplex_v1.DataScanJob.State.FAILED,
             dataplex_v1.DataScanJob.State.CANCELLED,
         ):
             raise RuntimeError(f"DQ job failed ❌ Status: {job.state.name}")
-        
+
         time.sleep(15)
