@@ -22,7 +22,6 @@ def run_scan(
     end_date: str = "",  # YYYY-MM-DD format (MANDATORY)
     date_column: str = "trip_start_timestamp",  # Column to filter on
 ) -> None:
-    from google.protobuf.timestamp_pb2 import Timestamp
     import time
     from datetime import datetime
     from google.cloud import dataplex_v1
