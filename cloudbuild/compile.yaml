@@ -1,0 +1,25 @@
+# cloudbuild/compile.yaml
+options:
+  machineType: "E2_HIGHCPU_8"
+steps:
+  - name: 'python:3.11'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+      set -euo pipefail
+      cd pipelines/src
+      python -m pipelines.${_PIPELINE_TEMPLATE}.${_PIPELINE}.pipeline
+artifacts:
+  objects:
+    location: "${_PIPELINE_FILES_GCS_PATH}/compiled"
+    paths: ["*.json"]
+
+
+substitutions:
+  _PIPELINE_TEMPLATE: 'xgboost'
+  _PIPELINE: 'training'
+  _PIPELINE_FILES_GCS_PATH: ''
+
+
+timeout: '1200s'

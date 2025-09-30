@@ -1,0 +1,66 @@
+# cloudbuild/test.yaml
+options:
+  machineType: "E2_HIGHCPU_8"
+steps:
+  - name: 'python:3.11'
+  id: 'install-deps'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+    set -euo pipefail
+    cd pipelines
+    python -m pip install --upgrade pip
+    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    if [ -f ../requirements-dev.txt ]; then pip install -r ../requirements-dev.txt; fi
+  - name: 'python:3.11'
+  id: 'pre-commit'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+    cd pipelines
+    pre-commit run --all-files || true
+  - name: 'python:3.11'
+  id: 'test-trigger'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+    cd pipelines
+    pytest tests/trigger
+  - name: 'python:3.11'
+  id: 'test-all-components'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+    set -euo pipefail
+    for component_group in components/*/; do
+      echo "Testing components under $component_group"
+      cd "$component_group"
+      pip install -r requirements.txt
+      pytest
+      cd -
+    done
+  - name: 'python:3.11'
+  id: 'e2e-tests'
+  entrypoint: 'bash'
+  args:
+    - -c
+    - |
+    set -euo pipefail
+    if [ "${_SYNC_ASSETS}" = "true" ]; then
+      gsutil -m rsync -r -d ./pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/${_PIPELINE}/assets ${_PIPELINE_FILES_GCS_PATH}/${_PIPELINE}/assets || true
+    fi
+    cd pipelines
+    pytest --log-cli-level=INFO tests/${_PIPELINE_TEMPLATE}/${_PIPELINE} --enable_caching=${_ENABLE_PIPELINE_CACHING}
+
+substitutions:
+_PIPELINE_TEMPLATE: 'xgboost'
+_PIPELINE: 'training'
+_PIPELINE_FILES_GCS_PATH: ''
+_ENABLE_PIPELINE_CACHING: 'false'
+_SYNC_ASSETS: 'true'
+
+timeout: '1800s'

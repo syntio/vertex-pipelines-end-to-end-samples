@@ -192,7 +192,7 @@ env.prod.sh
 **/venv37/
 
 # Compiled Kubeflow pipelines (should not be committed)
-*.yaml
+!.cloudbuild/*.yaml
 !.github/workflows/*.yml
 !.github/workflows/*.yaml
 
