@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+from datetime import datetime
 import os
 import pathlib
 
@@ -24,6 +24,13 @@ from vertex_components import (
     custom_train_job,
     import_model_evaluation,
     update_best_model,
+)
+from dataplex_components import (
+    run_dq_scan,
+    run_profile_scan,
+    store_profile_results,
+    compare_profiles,
+    detect_significant_changes,
 )
 
 
@@ -145,20 +152,31 @@ def tensorflow_pipeline(
         query=ingest_query, table_id=ingested_table, **kwargs
     ).set_display_name("Ingest data")
 
+    scan = (
+        run_dq_scan(
+            project_id=project_id,
+            location=project_location,
+            bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
+            dq_scan_id=f"taxi-trips-scan-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+        )
+        .after(ingest)
+        .set_display_name("Run DQ scan")
+    )
+
     # exporting data to GCS from BQ
     split_train_data = (
         bq_query_to_table(query=split_train_query, table_id=train_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split train data")
     )
     split_valid_data = (
         bq_query_to_table(query=split_valid_query, table_id=valid_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split validation data")
     )
     split_test_data = (
         bq_query_to_table(query=split_test_query, table_id=test_table, **kwargs)
-        .after(ingest)
+        .after(scan)
         .set_display_name("Split test data")
     )
     data_cleaning = (
@@ -167,6 +185,101 @@ def tensorflow_pipeline(
         )
         .after(split_train_data)
         .set_display_name("Clean data")
+    )
+
+    # PROFILING: After data ingestion (post-ingestion stage)
+    profile_post_ingestion = (
+        run_profile_scan(
+            project_id=project_id,
+            location=project_location,
+            bq_table=f"{project_id}.{dataset_id}.{ingested_table}",
+            profile_scan_id="tf-training-post-ingestion",
+            pipeline_stage="post-ingestion",
+            pipeline_run_id="{{$.pipeline_job_name}}",
+            start_date=os.environ.get("TABLE_FILTER_START_DATE", "2022-09-01"),
+            end_date=os.environ.get("TABLE_FILTER_END_DATE", "2022-09-30"),
+        )
+        .after(ingest)
+        .set_display_name("Profile scan: Post-ingestion")
+    )
+
+    # PROFILING: After preprocessing (post-preprocessing stage)
+    profile_post_preprocessing = (
+        run_profile_scan(
+            project_id=project_id,
+            location=project_location,
+            bq_table=f"{project_id}.{dataset_id}.{preprocessed_table}",
+            profile_scan_id="tf-training-post-preprocessing",
+            pipeline_stage="post-preprocessing",
+            pipeline_run_id="{{$.pipeline_job_name}}",
+            start_date=os.environ.get("TABLE_FILTER_START_DATE", "2022-09-01"),
+            end_date=os.environ.get("TABLE_FILTER_END_DATE", "2022-09-30"),
+        )
+        .after(data_cleaning)
+        .set_display_name("Profile scan: Post-preprocessing")
+    )
+
+    # STORAGE: Store profile results in BigQuery
+    store_ingestion_profiles = (
+        store_profile_results(
+            profile_results=profile_post_ingestion.outputs["profile_results"],
+            project_id=project_id,
+        )
+        .after(profile_post_ingestion)
+        .set_display_name("Store ingestion profiles")
+    )
+
+    store_preprocessing_profiles = (
+        store_profile_results(
+            profile_results=profile_post_preprocessing.outputs["profile_results"],
+            project_id=project_id,
+        )
+        .after(profile_post_preprocessing)
+        .set_display_name("Store preprocessing profiles")
+    )
+
+    # COMPARISON: Compare current profiles with historical baselines
+    compare_ingestion_profiles = (
+        compare_profiles(
+            current_profile=profile_post_ingestion.outputs["profile_results"],
+            project_id=project_id,
+        )
+        .after(store_ingestion_profiles)
+        .set_display_name("Compare ingestion profiles")
+    )
+
+    compare_preprocessing_profiles = (
+        compare_profiles(
+            current_profile=profile_post_preprocessing.outputs["profile_results"],
+            project_id=project_id,
+        )
+        .after(store_preprocessing_profiles)
+        .set_display_name("Compare preprocessing profiles")
+    )
+
+    # VALIDATION: Check for significant changes (>10% deviation)
+    validate_ingestion_changes = (
+        detect_significant_changes(
+            significant_changes=compare_ingestion_profiles.outputs[
+                "significant_changes"
+            ],
+            project_id=project_id,
+            pipeline_run_id="{{$.pipeline_job_name}}",
+        )
+        .after(compare_ingestion_profiles)
+        .set_display_name("Validate ingestion changes")
+    )
+
+    validate_preprocessing_changes = (
+        detect_significant_changes(
+            significant_changes=compare_preprocessing_profiles.outputs[
+                "significant_changes"
+            ],
+            project_id=project_id,
+            pipeline_run_id="{{$.pipeline_job_name}}",
+        )
+        .after(compare_preprocessing_profiles)
+        .set_display_name("Validate preprocessing changes")
     )
 
     # data extraction to gcs
@@ -179,7 +292,9 @@ def tensorflow_pipeline(
             table_name=preprocessed_table,
             dataset_location=dataset_location,
         )
-        .after(data_cleaning)
+        .after(
+            data_cleaning, validate_ingestion_changes, validate_preprocessing_changes
+        )
         .set_display_name("Extract train data to storage")
     ).outputs["dataset"]
     valid_dataset = (

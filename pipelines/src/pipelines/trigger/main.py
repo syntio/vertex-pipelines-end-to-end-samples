@@ -168,7 +168,7 @@ def get_env() -> dict:
     and return them as a dictionary.
     """
 
-    project_id = os.environ["VERTEX_PROJECT_ID"]
+    project_id = os.environ["PROJECT_ID"]
     location = os.environ["VERTEX_LOCATION"]
     pipeline_root = os.environ["VERTEX_PIPELINE_ROOT"]
     service_account = os.environ["VERTEX_SA_EMAIL"]
@@ -192,10 +192,9 @@ def sandbox_run(args: List[str] = None) -> aiplatform.PipelineJob:
     Usage: python main.py --template_path=pipeline.json --enable_caching=true
     """
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
-    
+
     logging.info("Starting pipeline execution...")
 
     parser = argparse.ArgumentParser()

@@ -16,8 +16,10 @@ from kfp.dsl import component
 
 
 @component(
-    base_image="python:3.11",
-    packages_to_install=["google-cloud-bigquery"],
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def bq_query_to_table(
     query: str,
@@ -64,7 +66,7 @@ def bq_query_to_table(
     query_job = bq_client.query(query, job_config=job_config)
 
     try:
-        result = query_job.result()
+        query_job.result()
         logging.info(f"BQ table {dest_table_ref} created")
     except GoogleCloudError as e:
         logging.error(e)

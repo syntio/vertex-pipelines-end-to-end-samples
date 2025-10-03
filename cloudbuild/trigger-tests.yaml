@@ -13,9 +13,9 @@
 # limitations under the License.
 ---
 steps:
-  - name: 'python:3.11'
+  - name: "python:3.11"
     args:
-      - '-c'
+      - "-c"
       - |
         make setup && \
         make test-trigger

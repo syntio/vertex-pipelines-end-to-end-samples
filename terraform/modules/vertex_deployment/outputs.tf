@@ -37,3 +37,20 @@ output "vertex_pipelines_sa_email" {
 output "cloudfunction_sa_email" {
   value = google_service_account.vertex_cloudfunction_sa.email
 }
+
+output "artifact_registry_repository_url" {
+  value = "${google_artifact_registry_repository.container_repository.location}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.container_repository.repository_id}"
+}
+
+output "pipeline_config_secret_id" {
+  value = google_secret_manager_secret.pipeline_config.secret_id
+}
+
+output "model_config_secret_id" {
+  value = google_secret_manager_secret.model_config.secret_id
+}
+
+output "gcp_services" {
+  value       = google_project_service.gcp_services
+  description = "GCP services enabled for the project"
+}

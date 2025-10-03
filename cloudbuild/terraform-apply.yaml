@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-
 steps:
-
   # Apply terraform
   - name: hashicorp/terraform:1.4.0
     dir: /workspace/${_ENV_DIRECTORY}

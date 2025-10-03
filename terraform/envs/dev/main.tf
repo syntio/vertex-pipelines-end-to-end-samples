@@ -21,12 +21,12 @@ terraform {
 
     google = {
       source  = "hashicorp/google"
-      version = "~> 4.56.0"
+      version = "~> 6.0"
     }
 
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 4.56.0"
+      version = "~> 6.0"
     }
 
   }
@@ -37,9 +37,20 @@ terraform {
 
 # Core Vertex Pipelines infrastructure
 module "vertex_deployment" {
-  source     = "../../modules/vertex_deployment"
-  project_id = var.project_id
-  region     = var.region
+  source      = "../../modules/vertex_deployment"
+  project_id  = var.project_id
+  region      = var.region
+  environment = "dev"
+  name_prefix = var.name_prefix
+}
+
+# GitHub Actions authentication setup (only for dev environment)
+module "github_actions_auth" {
+  source                  = "../../modules/github_actions_auth"
+  project_id              = var.project_id
+  github_repository_owner = var.github_repository_owner
+  github_repository_name  = var.github_repository_name
+  enable_apis             = module.vertex_deployment.gcp_services
 }
 
 # Cloud Scheduler jobs (for triggering pipelines)

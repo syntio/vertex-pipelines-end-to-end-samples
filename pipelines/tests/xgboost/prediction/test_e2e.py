@@ -31,7 +31,7 @@ def test_pipeline_run(enable_caching) -> None:
         None
     """
 
-    pipeline_json = "prediction.json"
+    # pipeline_json = "prediction.json"
 
     # tasks (components) and outputs for tasks which occur unconditionally
     pipeline_e2e_test(

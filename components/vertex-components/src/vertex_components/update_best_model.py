@@ -17,8 +17,10 @@ from kfp.dsl import Input, Model, component
 
 
 @component(
-    base_image="python:3.11",
-    packages_to_install=["google-cloud-aiplatform"],
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def update_best_model(
     challenger: Input[Model],
@@ -83,5 +85,5 @@ def update_best_model(
         model_registry.add_version_aliases(["default"], challenger.version_id)
         return (True,)
 
-    logging.info(f"Keeping current champion!")
+    logging.info("Keeping current champion!")
     return (False,)

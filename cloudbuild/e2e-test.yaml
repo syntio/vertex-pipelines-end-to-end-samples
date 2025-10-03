@@ -13,7 +13,6 @@
 # limitations under the License.
 ---
 steps:
-
   # Copy assets files to a new directory in GCS
   # (via a new local directory)
   # Directory name = git commit hash
@@ -26,12 +25,12 @@ steps:
         mkdir -p ${COMMIT_SHA}/prediction/assets && \
         cp -r pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/training/assets ${COMMIT_SHA}/training/ && \
         cp -r pipelines/src/pipelines/${_PIPELINE_TEMPLATE}/prediction/assets ${COMMIT_SHA}/prediction/ && \
-        gsutil cp -r ${COMMIT_SHA} ${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
+        gsutil cp -r ${COMMIT_SHA} gs://${_PIPELINE_PUBLISH_GCS_PATH}/
 
   # Install Python deps
   # Run end-to-end (E2E) pipeline tests on both pipelines
   - name: python:3.11
-    entrypoint: /bin/sh
+    entrypoint: bash
     args:
       - -c
       - |
@@ -40,13 +39,13 @@ steps:
         make e2e-tests pipeline=prediction enable_pipeline_caching=False sync_assets=false
     env:
       - VERTEX_LOCATION=${_TEST_VERTEX_LOCATION}
-      - VERTEX_PROJECT_ID=${_TEST_VERTEX_PROJECT_ID}
+      - PROJECT_ID=${_TEST_PROJECT_ID}
       - VERTEX_SA_EMAIL=${_TEST_VERTEX_SA_EMAIL}
       - VERTEX_CMEK_IDENTIFIER=${_TEST_VERTEX_CMEK_IDENTIFIER}
       - VERTEX_NETWORK=${_TEST_VERTEX_NETWORK}
       - PIPELINE_TEMPLATE=${_PIPELINE_TEMPLATE}
       - VERTEX_PIPELINE_ROOT=${_TEST_VERTEX_PIPELINE_ROOT}
-      - PIPELINE_FILES_GCS_PATH=${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
+      - PIPELINE_FILES_GCS_PATH=gs://${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
 
 options:
   logging: CLOUD_LOGGING_ONLY

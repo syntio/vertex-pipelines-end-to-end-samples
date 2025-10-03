@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
  -->
  # Vertex Pipelines End-to-end Samples
+ [![Pull Request Checks](https://github.com/YOUR_GITHUB_ORG/YOUR_REPO_NAME/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/YOUR_GITHUB_ORG/YOUR_REPO_NAME/actions/workflows/pr-checks.yml)
 
 ## Introduction
 
@@ -83,7 +84,7 @@ We recommend that you set up CI/CD to deploy your environments. However, if you 
 2. Using the `gsutil` command line tool, create a Cloud Storage bucket for the Terraform state:
 
 ```
-gsutil mb -l ${VERTEX_LOCATION} -p ${VERTEX_PROJECT_ID} --pap=enforced gs://${VERTEX_PROJECT_ID}-tfstate && gsutil ubla set on gs://${VERTEX_PROJECT_ID}-tfstate
+gsutil mb -l ${VERTEX_LOCATION} -p ${PROJECT_ID} --pap=enforced gs://${PROJECT_ID}-tfstate && gsutil ubla set on gs://${PROJECT_ID}-tfstate
 ```
 
 3. Deploy the cloud infrastructure by running the `make deploy-infra` command from the root of the repository.
@@ -133,20 +134,20 @@ Before you can run these example pipelines successfully there are a few addition
 1. Create a new BigQuery dataset for the Chicago Taxi data:
 
 ```
-bq --location=${VERTEX_LOCATION} mk --dataset "${VERTEX_PROJECT_ID}:chicago_taxi_trips"
+bq --location=${VERTEX_LOCATION} mk --dataset "${PROJECT_ID}:chicago_taxi_trips"
 ```
 
 2. Create a new BigQuery dataset for data processing during the pipelines:
 
 ```
-bq --location=${VERTEX_LOCATION} mk --dataset "${VERTEX_PROJECT_ID}:preprocessing"
+bq --location=${VERTEX_LOCATION} mk --dataset "${PROJECT_ID}:preprocessing"
 ```
 
 3. Set up a BigQuery transfer job to mirror the Chicago Taxi dataset to your project
 
 ```
 bq mk --transfer_config \
-  --project_id=${VERTEX_PROJECT_ID} \
+  --project_id=${PROJECT_ID} \
   --data_source="cross_region_copy" \
   --target_dataset="chicago_taxi_trips" \
   --display_name="Chicago taxi trip mirror" \

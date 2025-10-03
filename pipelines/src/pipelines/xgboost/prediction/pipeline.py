@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 import pathlib
 
@@ -25,9 +24,9 @@ from vertex_components import lookup_model, model_batch_predict
 
 @dsl.pipeline(name="xgboost-prediction-pipeline")
 def xgboost_pipeline(
-    project_id: str = os.environ.get("VERTEX_PROJECT_ID"),
+    project_id: str = os.environ.get("PROJECT_ID"),
     project_location: str = os.environ.get("VERTEX_LOCATION"),
-    ingestion_project_id: str = os.environ.get("VERTEX_PROJECT_ID"),
+    ingestion_project_id: str = os.environ.get("PROJECT_ID"),
     model_name: str = "simple_xgboost",
     dataset_id: str = "preprocessing",
     dataset_location: str = os.environ.get("VERTEX_LOCATION"),
@@ -117,7 +116,7 @@ def xgboost_pipeline(
     bigquery_source_input_uri = f"bq://{project_id}.{dataset_id}.{ingested_table}"
     bigquery_destination_output_uri = f"bq://{project_id}.{dataset_id}"
 
-    batch_prediction = (
+    (
         model_batch_predict(
             model=champion_model.outputs["model"],
             job_display_name="my-xgboost-batch-prediction-job",

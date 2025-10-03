@@ -171,11 +171,18 @@ pytest.ini
 *.tfstate.*
 .terraform.lock.hcl
 
+# Terraform variable files (keep only .example files)
+*.tfvars
+!*.tfvars.example
+
 # Cloud Function zip
 terraform/**/*.zip
 
 # env.sh (only example file should be committed)
 env.sh
+env.dev.sh
+env.test.sh
+env.prod.sh
 
 # VS code configurations
 .vscode
@@ -183,6 +190,11 @@ env.sh
 # Compiled pipelines
 **/*pipeline.json
 **/venv37/
+
+# Compiled Kubeflow pipelines (should not be committed)
+*.yaml
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
 
 # Pathfinder/development documentation
 PATHFINDER_EXECUTION_SUMMARY.md

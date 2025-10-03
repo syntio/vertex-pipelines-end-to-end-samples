@@ -37,3 +37,20 @@ variable "cloud_schedulers_config" {
   }))
   default = {}
 }
+
+variable "github_repository_owner" {
+  description = "GitHub repository owner (organization or user) for Workload Identity Federation"
+  type        = string
+}
+
+variable "github_repository_name" {
+  description = "GitHub repository name for Workload Identity Federation"
+  type        = string
+}
+
+variable "name_prefix" {
+  description = "Prefix for resource names to distinguish different ML workloads"
+  type        = string
+}
+
+# workload_identity_pool_id is now auto-generated from project_id + repository hash

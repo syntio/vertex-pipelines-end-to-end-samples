@@ -210,90 +210,97 @@ def _get_temp_dir(dirpath, task_id):
     return temp_dir
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--train_data", type=str, required=True)
-parser.add_argument("--valid_data", type=str, required=True)
-parser.add_argument("--test_data", type=str, required=True)
-parser.add_argument("--model", default=os.getenv("AIP_MODEL_DIR"), type=str, help="")
-parser.add_argument("--metrics", type=str, required=True)
-parser.add_argument("--hparams", default={}, type=json.loads)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train_data", type=str, required=True)
+    parser.add_argument("--valid_data", type=str, required=True)
+    parser.add_argument("--test_data", type=str, required=True)
+    parser.add_argument(
+        "--model", default=os.getenv("AIP_MODEL_DIR"), type=str, help=""
+    )
+    parser.add_argument("--metrics", type=str, required=True)
+    parser.add_argument("--hparams", default={}, type=json.loads)
+    args = parser.parse_args()
 
-if args.model.startswith("gs://"):
-    args.model = Path("/gcs/" + args.model[5:])
+    if args.model.startswith("gs://"):
+        args.model = Path("/gcs/" + args.model[5:])
 
-# merge dictionaries by overwriting default_model_params if provided in model_params
-hparams = {**DEFAULT_HPARAMS, **args.hparams}
-logging.info(f"Using model hyper-parameters: {hparams}")
-label = hparams["label"]
+    # merge dictionaries by overwriting default_model_params if provided in model_params
+    hparams = {**DEFAULT_HPARAMS, **args.hparams}
+    logging.info(f"Using model hyper-parameters: {hparams}")
+    label = hparams["label"]
 
-# Set distribute strategy before any TF operations
-strategy = get_distribution_strategy(hparams["distribute_strategy"])
+    # Set distribute strategy before any TF operations
+    strategy = get_distribution_strategy(hparams["distribute_strategy"])
 
-train_ds = create_dataset(Path(args.train_data), label, hparams)
-valid_ds = create_dataset(Path(args.valid_data), label, hparams)
-test_ds = create_dataset(Path(args.test_data), label, hparams)
+    train_ds = create_dataset(Path(args.train_data), label, hparams)
+    valid_ds = create_dataset(Path(args.valid_data), label, hparams)
+    test_ds = create_dataset(Path(args.test_data), label, hparams)
 
-train_features = list(train_ds.element_spec[0].keys())
-valid_features = list(valid_ds.element_spec[0].keys())
-logging.info(f"Training feature names: {train_features}")
-logging.info(f"Validation feature names: {valid_features}")
+    train_features = list(train_ds.element_spec[0].keys())
+    valid_features = list(valid_ds.element_spec[0].keys())
+    logging.info(f"Training feature names: {train_features}")
+    logging.info(f"Validation feature names: {valid_features}")
 
-if len(train_features) != len(valid_features):
-    raise RuntimeError(f"No. of training features != # validation features")
+    if len(train_features) != len(valid_features):
+        raise RuntimeError("No. of training features != # validation features")
 
-with strategy.scope():
-    tf_model = build_and_compile_model(train_ds, hparams)
+    with strategy.scope():
+        tf_model = build_and_compile_model(train_ds, hparams)
 
-logging.info("Use early stopping")
-callback = tf.keras.callbacks.EarlyStopping(
-    monitor="loss", mode="min", patience=hparams["early_stopping_epochs"]
-)
+    logging.info("Use early stopping")
+    callback = tf.keras.callbacks.EarlyStopping(
+        monitor="loss", mode="min", patience=hparams["early_stopping_epochs"]
+    )
 
-logging.info("Fit model...")
-history = tf_model.fit(
-    train_ds,
-    batch_size=hparams["batch_size"],
-    epochs=hparams["epochs"],
-    validation_data=valid_ds,
-    callbacks=[callback],
-)
+    logging.info("Fit model...")
+    history = tf_model.fit(
+        train_ds,
+        batch_size=hparams["batch_size"],
+        epochs=hparams["epochs"],
+        validation_data=valid_ds,
+        callbacks=[callback],
+    )
 
-# only persist output files if current worker is chief
-if not _is_chief(strategy):
-    logging.info("not chief node, exiting now")
-    sys.exit()
+    # only persist output files if current worker is chief
+    if not _is_chief(strategy):
+        logging.info("not chief node, exiting now")
+        sys.exit()
 
-logging.info(f"Save model to: {args.model}")
-args.model.mkdir(parents=True)
-tf_model.save(str(args.model), save_format="tf")
+    logging.info(f"Save model to: {args.model}")
+    args.model.mkdir(parents=True)
+    tf_model.save(str(args.model), save_format="tf")
 
-logging.info(f"Save metrics to: {args.metrics}")
-eval_metrics = dict(zip(tf_model.metrics_names, tf_model.evaluate(test_ds)))
+    logging.info(f"Save metrics to: {args.metrics}")
+    eval_metrics = dict(zip(tf_model.metrics_names, tf_model.evaluate(test_ds)))
 
-metrics = {
-    "problemType": "regression",
-    "rootMeanSquaredError": eval_metrics["root_mean_squared_error"],
-    "meanAbsoluteError": eval_metrics["mean_absolute_error"],
-    "meanAbsolutePercentageError": eval_metrics["mean_absolute_percentage_error"],
-    "rSquared": None,
-    "rootMeanSquaredLogError": eval_metrics["mean_squared_logarithmic_error"],
-}
+    metrics = {
+        "problemType": "regression",
+        "rootMeanSquaredError": eval_metrics["root_mean_squared_error"],
+        "meanAbsoluteError": eval_metrics["mean_absolute_error"],
+        "meanAbsolutePercentageError": eval_metrics["mean_absolute_percentage_error"],
+        "rSquared": None,
+        "rootMeanSquaredLogError": eval_metrics["mean_squared_logarithmic_error"],
+    }
 
-with open(args.metrics, "w") as fp:
-    json.dump(metrics, fp)
+    with open(args.metrics, "w") as fp:
+        json.dump(metrics, fp)
 
-# Persist URIs of training file(s) for model monitoring in batch predictions
-# See https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingDataset  # noqa: E501
-# for the expected schema.
-path = args.model / TRAINING_DATASET_INFO
-training_dataset_for_monitoring = {
-    "gcsSource": {"uris": [args.train_data]},
-    "dataFormat": "csv",
-    "targetField": label,
-}
-logging.info(f"Save training dataset info for model monitoring: {path}")
-logging.info(f"Training dataset: {training_dataset_for_monitoring}")
+    # Persist URIs of training file(s) for model monitoring in batch predictions
+    # See https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingDataset  # noqa: E501
+    # for the expected schema.
+    path = args.model / TRAINING_DATASET_INFO
+    training_dataset_for_monitoring = {
+        "gcsSource": {"uris": [args.train_data]},
+        "dataFormat": "csv",
+        "targetField": label,
+    }
+    logging.info(f"Save training dataset info for model monitoring: {path}")
+    logging.info(f"Training dataset: {training_dataset_for_monitoring}")
 
-with open(path, "w") as fp:
-    json.dump(training_dataset_for_monitoring, fp)
+    with open(path, "w") as fp:
+        json.dump(training_dataset_for_monitoring, fp)
+
+
+if __name__ == "__main__":
+    main()

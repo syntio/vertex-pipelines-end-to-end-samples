@@ -27,7 +27,7 @@ resource "google_project_service" "gcp_services" {
 # Vertex Pipelines service account
 resource "google_service_account" "pipelines_sa" {
   project      = var.project_id
-  account_id   = "vertex-pipelines"
+  account_id   = "ml-ops-turbo-${var.environment}-vertex-pl"
   display_name = "Vertex Pipelines Service Account"
   depends_on   = [google_project_service.gcp_services]
 }
@@ -35,14 +35,14 @@ resource "google_service_account" "pipelines_sa" {
 # Cloud Function service account
 resource "google_service_account" "vertex_cloudfunction_sa" {
   project      = var.project_id
-  account_id   = "vertex-cloudfunction-sa"
+  account_id   = "ml-ops-turbo-${var.environment}-cf-sa"
   display_name = "Cloud Function (Vertex Pipeline trigger) Service Account"
   depends_on   = [google_project_service.gcp_services]
 }
 
 ## GCS buckets ##
 resource "google_storage_bucket" "pipeline_root_bucket" {
-  name                        = "${var.project_id}-pl-root"
+  name                        = "${var.project_id}-${var.name_prefix}-${var.environment}-pl-root"
   location                    = var.region
   project                     = var.project_id
   uniform_bucket_level_access = true
@@ -51,7 +51,7 @@ resource "google_storage_bucket" "pipeline_root_bucket" {
 }
 
 resource "google_storage_bucket" "pipeline_assets_bucket" {
-  name                        = "${var.project_id}-pl-assets"
+  name                        = "${var.project_id}-${var.name_prefix}-${var.environment}-pl-assets"
   location                    = var.region
   project                     = var.project_id
   uniform_bucket_level_access = true
@@ -70,14 +70,14 @@ locals {
 
 # Pub/Sub topic (for triggering pipelines)
 resource "google_pubsub_topic" "pipeline_trigger_topic" {
-  name       = var.pubsub_topic_name
+  name       = coalesce(var.pubsub_topic_name, "${var.name_prefix}-${var.environment}-vertex-pipeline-trigger")
   project    = var.project_id
   depends_on = [google_project_service.gcp_services]
 }
 
 # Cloud Function staging bucket
 resource "google_storage_bucket" "cf_staging_bucket" {
-  name                        = "${var.project_id}-cf-staging"
+  name                        = "${var.project_id}-${var.name_prefix}-${var.environment}-cf-staging"
   location                    = local.cloudfunction_region
   project                     = var.project_id
   uniform_bucket_level_access = true
@@ -90,11 +90,11 @@ module "cloudfunction" {
   source                        = "../cloudfunction"
   project_id                    = var.project_id
   region                        = local.cloudfunction_region
-  function_name                 = var.cloudfunction_name
+  function_name                 = coalesce(var.cloudfunction_name, "${var.name_prefix}-${var.environment}-vertex-pipelines-trigger")
   description                   = var.cloudfunction_description
   source_dir                    = "../../../pipelines/src/pipelines/trigger"
   source_code_bucket_name       = google_storage_bucket.cf_staging_bucket.name
-  runtime                       = "python39"
+  runtime                       = "python311"
   entry_point                   = "cf_handler"
   cf_service_account            = google_service_account.vertex_cloudfunction_sa.email
   vpc_connector                 = var.cloudfunction_vpc_connector
@@ -107,10 +107,65 @@ module "cloudfunction" {
   environment_variables = {
     VERTEX_LOCATION      = var.region
     VERTEX_PIPELINE_ROOT = google_storage_bucket.pipeline_root_bucket.url
-    VERTEX_PROJECT_ID    = var.project_id
+    PROJECT_ID           = var.project_id
     VERTEX_SA_EMAIL      = google_service_account.pipelines_sa.email
   }
   depends_on = [google_project_service.gcp_services]
+}
+
+## Artifact Registry ##
+resource "google_artifact_registry_repository" "container_repository" {
+  repository_id = "${var.name_prefix}-${var.environment}-${var.artifact_registry_repository_id}"
+  location      = var.region
+  project       = var.project_id
+  description   = "Container repository for ML pipeline components"
+  format        = "DOCKER"
+  depends_on    = [google_project_service.gcp_services]
+}
+
+## Secret Manager ##
+resource "google_secret_manager_secret" "pipeline_config" {
+  provider  = google-beta
+  secret_id = "${var.name_prefix}-${var.environment}-pipeline-config"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.gcp_services]
+}
+
+resource "google_secret_manager_secret_version" "pipeline_config_version" {
+  secret = google_secret_manager_secret.pipeline_config.id
+  secret_data = jsonencode({
+    environment = var.environment
+    debug_mode  = false
+    batch_size  = 1000
+  })
+}
+
+resource "google_secret_manager_secret" "model_config" {
+  provider  = google-beta
+  secret_id = "${var.name_prefix}-${var.environment}-model-config"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.gcp_services]
+}
+
+resource "google_secret_manager_secret_version" "model_config_version" {
+  secret = google_secret_manager_secret.model_config.id
+  secret_data = jsonencode({
+    hyperparameters = {
+      learning_rate = 0.01
+      epochs        = 100
+    }
+    model_version = "v1.0"
+  })
 }
 
 ## Vertex Metadata store ##

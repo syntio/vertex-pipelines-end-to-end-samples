@@ -16,8 +16,10 @@ from kfp.dsl import Dataset, Output, component
 
 
 @component(
-    base_image="python:3.11",
-    packages_to_install=["google-cloud-bigquery"],
+    base_image=(
+        "europe-west2-docker.pkg.dev/PROJECT_ID/"
+        "ml-pipeline-containers/ml-pipeline-base:latest"
+    ),
 )
 def extract_bq_to_dataset(
     bq_client_project_id: str,

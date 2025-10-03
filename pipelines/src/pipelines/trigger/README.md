@@ -21,7 +21,7 @@ make run pipeline=<training|prediction> [ enable_caching=<true|false> ]
 ```
 This command compiles the pipeline, copies assets to GCS, and then triggers the pipeline. It relies on several environment variables which you must specify beforehand in `env.sh`. These variables are:
 
-- `VERTEX_PROJECT_ID`: your project id
+- `PROJECT_ID`: your project id
 - `VERTEX_LOCATION`: your project location
 - `VERTEX_PIPELINE_ROOT`: URI for root directory
 - `VERTEX_SA_EMAIL`: service account
