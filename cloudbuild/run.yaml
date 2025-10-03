@@ -23,7 +23,9 @@ steps:
       - |
         set -euo pipefail
         cd pipelines/src
+        pip install --no-cache-dir -r requirements.txt
         python -m pipelines.trigger --template_path=./${_PIPELINE}.json --enable_caching=${_ENABLE_PIPELINE_CACHING}
+
 
 
 substitutions:
